@@ -79,13 +79,12 @@ void fill1DHistogram(std::string name, float xval, double weight, std::unordered
     hists[name]->Fill(xval,weight);
 }
 
-float computeWeight(std::string current_sample)
+float computeWeight(std::string current_sample, float scale1fb)
 {
     if(current_sample == "Data")
     {
         return 1.0;
     }
-    float scale1fb;
     return nt.genWeight() * scale1fb * lumi[year];
 }
 
@@ -122,7 +121,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::unordered_map<std::st
                 continue;
             }
             
-            float weight = computeWeight(current_sample);
+            float weight = computeWeight(current_sample, scale1fb);
 
             fill1DHistogram("mgg_"+current_sample,nt.gg_mass() , weight, hists1D, "", 100, 100, 200, rootdir);
 
@@ -213,7 +212,11 @@ int main(int argc, char* argv[])
     lumi[2016] = 35.9;
     lumi[2017] = 41.5;
     lumi[2018] = 59.8; 
-
+    std::string select_samples;
+    if(argc > 1)
+    {
+        select_samples = argv[1];
+    }
     is_resonant["Data"] = false;
     is_resonant["DiPhoton"] = false;
     is_resonant["GJets_HT-100To200"] = false;
@@ -254,6 +257,10 @@ int main(int argc, char* argv[])
     for(auto& jt:samples_2016)
     {
         std::string sample = jt.first;
+        if(sample != select_samples and argc > 1)
+        {
+            continue;
+        }
         TChain *ch_2016 = new TChain("Events");
         TChain *ch_2017 = new TChain("Events");
         TChain *ch_2018 = new TChain("Events");
@@ -262,6 +269,7 @@ int main(int argc, char* argv[])
         addToChain(samples_2017, ch_2017, TString(sample.c_str()));
         addToChain(samples_2018, ch_2018, TString(sample.c_str()));
 
+        std::cout<<"sample name = "<<sample<<std::endl;
         loopTChain(ch_2016, 2016, scale1fb_2016[sample], hists1D_2016, sample);
         loopTChain(ch_2017, 2017, scale1fb_2017[sample], hists1D_2017, sample);
         loopTChain(ch_2018, 2018, scale1fb_2018[sample], hists1D_2018, sample);
