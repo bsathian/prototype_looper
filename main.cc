@@ -15,13 +15,15 @@
 #include "TTreePerfStats.h"
 #include "tqdm.h"
 #include "Nano.cc"
+#include "cxxopts.hpp"
 
 std::unordered_map<int, float> lumi;
 
 int year;
 std::unordered_map<std::string, bool> is_resonant;
-
+std::unordered_map<std::string, float> process_ids;
 TFile* outFile;
+TTree* output_tree;
 TDirectory* rootdir;
 
 bool passDiPhotonPreselections(std::string current_sample)
@@ -88,6 +90,16 @@ float computeWeight(std::string current_sample, float scale1fb)
     return nt.genWeight() * scale1fb * lumi[year];
 }
 
+float deltaR(float eta1, float phi1, float eta2, float phi2)
+{
+    return sqrt((eta1 - eta2) * (eta1 - eta2) + (phi1 - phi2) * (phi1 - phi2));
+}
+
+float deltaR(LorentzVector& v1, LorentzVector& v2)
+{
+    return sqrt((v1.eta() - v2.eta()) * (v1.eta() - v2.eta()) + (v1.phi() - v2.phi()) *(v1.phi() - v2.phi()));
+}
+
 void loopTChain(TChain* ch, int year, float scale1fb, std::unordered_map<std::string, TH1D*>& hists1D, std::string current_sample) 
 {
     ::year = year;
@@ -97,6 +109,9 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::unordered_map<std::st
     TObjArray *listOfFiles = ch->GetListOfFiles();
     TIter fileIter(listOfFiles);
     tqdm bar;
+    std::unordered_map<std::string, float> branches;
+    bool flag = false;
+
     while ((currentFile = (TFile*)fileIter.Next())) 
     {
         TFile *file = TFile::Open(currentFile->GetTitle());
@@ -123,21 +138,57 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::unordered_map<std::st
             
             float weight = computeWeight(current_sample, scale1fb);
 
-            fill1DHistogram("mgg_"+current_sample,nt.gg_mass() , weight, hists1D, "", 100, 100, 200, rootdir);
 
-            fill1DHistogram("lead_pho_ptmgg_"+current_sample, nt.selectedPhoton_pt()[0] / nt.gg_mass(), weight, hists1D, "", 200, 0, 20, rootdir);
-            fill1DHistogram("sublead_pho_ptmgg_"+current_sample, nt.selectedPhoton_pt()[1] / nt.gg_mass(), weight, hists1D, "", 200, 0, 20, rootdir);
+            //compute delta R stuff
 
-            fill1DHistogram("lead_pho_pt_"+current_sample, nt.selectedPhoton_pt()[0], weight, hists1D, "", 200, 0, 1000, rootdir);
-            fill1DHistogram("sublead_pho_pt_"+current_sample, nt.selectedPhoton_pt()[1], weight, hists1D, "", 200, 0, 1000, rootdir);
 
-            fill1DHistogram("lead_pho_eta_"+current_sample, nt.selectedPhoton_eta()[0], weight, hists1D, "", 100, -5, 5, rootdir);
-            fill1DHistogram("sublead_pho_eta_"+current_sample, nt.selectedPhoton_eta()[1], weight, hists1D, "", 100, -5, 5, rootdir);
 
-            fill1DHistogram("lead_pho_phi_"+current_sample, nt.selectedPhoton_phi()[0], weight, hists1D, "", 100, -3.14, 3.14, rootdir);
-            fill1DHistogram("sublead_pho_phi_"+current_sample, nt.selectedPhoton_phi()[1], weight, hists1D, "", 100, -3.14, 3.14, rootdir);
+            branches["process_id"] = process_ids[current_sample];
+            branches["year"] = year;
+            branches["weight"] = weight;
+            branches["mgg"] = nt.gg_mass();
+
+            branches["lead_pho_ptmgg"] = nt.selectedPhoton_pt()[0] / nt.gg_mass();
+            branches["sublead_pho_ptmgg"] = nt.selectedPhoton_pt()[1] / nt.gg_mass();
+            branches["lead_pho_pt"] = nt.selectedPhoton_pt()[0];
+            branches["lead_pho_eta"] = nt.selectedPhoton_eta()[0];
+            branches["lead_pho_phi"] = nt.selectedPhoton_phi()[0];
+            branches["lead_pho_idmva"] = nt.selectedPhoton_mvaID()[0];
+            branches["lead_pho_pixelSeed"] = nt.selectedPhoton_pixelSeed()[0];
+
+
+            branches["sublead_pho_pt"] = nt.selectedPhoton_pt()[1];
+            branches["sublead_pho_eta"] = nt.selectedPhoton_eta()[1];
+            branches["sublead_pho_phi"] = nt.selectedPhoton_phi()[1];
+            branches["sublead_pho_idmva"] = nt.selectedPhoton_mvaID()[1];
+            branches["sublead_pho_pixelSeed"] = nt.selectedPhoton_pixelSeed()[1];
+
+            branches["nJet"] = nt.nJet();
+            branches["MET_pt"] = nt.MET_pt();
+            branches["MET_phi"] = nt.MET_phi();
+            branches["diphoton_eta"] = nt.gg_eta();
+            branches["diphoton_pt"] = nt.gg_pt();
+            branches["diphoton_phi"] = nt.gg_phi();
+            branches["diphoton_deltaR"] = deltaR(nt.selectedPhoton_eta()[0], nt.selectedPhoton_phi()[0], nt.selectedPhoton_eta()[1], nt.selectedPhoton_phi()[1]);
+
+            //write out branches
+            if(not flag)
+            {
+                for(auto &it:branches)
+                {
+                    output_tree->Branch(it.first.c_str(), &it.second);
+                }
+                flag = true;
+            }
+
+            output_tree->Fill();
+
         }
+
+        delete file;
     }
+    bar.finish();
+
 }
 
 /*
@@ -205,18 +256,31 @@ void addHists(std::unordered_map<std::string, TH1D*>& hists1D2016, std::unordere
 
 int main(int argc, char* argv[])
 {
-    std::string outputName = "output.root";
+    cxxopts::Options options("looper", "Prototype looper");
+    options.add_options()
+        ("no_data", "don't run on data", cxxopts::value<bool>()->default_value("false"))
+        ("select_sample", "run only on one sample", cxxopts::value<std::string>()->default_value(""))
+        ("output", "output root file name", cxxopts::value<std::string>()->default_value("output.root"))
+        ("h, help", "Print help");
+
+    auto result = options.parse(argc, argv);
+
+    if(result.count("help"))
+    {
+        std::cout<<options.help()<<std::endl;
+        exit(1);
+    }
+
+    std::string outputName = result["output"].as<std::string>();
+
     outFile = new TFile(outputName.c_str(), "RECREATE");
     rootdir = gDirectory->GetDirectory("Rint:");
-
     lumi[2016] = 35.9;
     lumi[2017] = 41.5;
     lumi[2018] = 59.8; 
-    std::string select_samples;
-    if(argc > 1)
-    {
-        select_samples = argv[1];
-    }
+
+    std::string select_samples = result["select_sample"].as<std::string>();
+
     is_resonant["Data"] = false;
     is_resonant["DiPhoton"] = false;
     is_resonant["GJets_HT-100To200"] = false;
@@ -235,6 +299,25 @@ int main(int argc, char* argv[])
     is_resonant["ggH"] = true;
     is_resonant["VBFH"] = true;
 
+    process_ids["Data"] = 0;
+    process_ids["HH_ggTauTau"] = -1;
+    process_ids["DiPhoton"] = 1;
+    process_ids["GJets_HT-100To200"] = 2;
+    process_ids["GJets_HT-200To400"] = 2;
+    process_ids["GJets_HT-400To600"] = 2;
+    process_ids["GJets_HT-600ToInf"] = 2;
+    process_ids["GJets_HT-40To100"] = 2;
+    process_ids["TTGG"] = 3;
+    process_ids["TTGamma"] = 4;
+    process_ids["TTBar"] = 5;
+    process_ids["VH"] = 6;
+    process_ids["WGamma"] = 7;
+    process_ids["ZGamma"] = 8;
+    process_ids["ttH"] = 9;
+    process_ids["ggH"] = 10;
+    process_ids["VBFH"] = 11;
+
+
     TChain *ch = new TChain("Events");
     //hardcoding paths
     std::unordered_map<std::string, std::vector<std::string>> samples_2016;
@@ -250,17 +333,26 @@ int main(int argc, char* argv[])
     std::unordered_map<std::string, TH1D*> hists1D_2018;
     std::unordered_map<std::string, TH1D*> hists1DTotal;
 
+    outFile->cd();
+    output_tree = new TTree("t", "A Baby Ntuple");
+
+
     readFromTextFile("samples_2016.txt", samples_2016, scale1fb_2016);
     readFromTextFile("samples_2017.txt", samples_2017, scale1fb_2017);
     readFromTextFile("samples_2018.txt", samples_2018, scale1fb_2018);
-
     for(auto& jt:samples_2016)
     {
         std::string sample = jt.first;
-        if(sample != select_samples and argc > 1)
+        if(select_samples != "" and sample != select_samples)
         {
             continue;
         }
+        if(result["no_data"].as<bool>() and sample == "Data")
+        {
+            continue;
+        }
+
+
         TChain *ch_2016 = new TChain("Events");
         TChain *ch_2017 = new TChain("Events");
         TChain *ch_2018 = new TChain("Events");
@@ -271,19 +363,16 @@ int main(int argc, char* argv[])
 
         std::cout<<"sample name = "<<sample<<std::endl;
         loopTChain(ch_2016, 2016, scale1fb_2016[sample], hists1D_2016, sample);
+        delete ch_2016;
         loopTChain(ch_2017, 2017, scale1fb_2017[sample], hists1D_2017, sample);
+        delete ch_2017;
         loopTChain(ch_2018, 2018, scale1fb_2018[sample], hists1D_2018, sample);
+        delete ch_2018;
     }
     addHists(hists1D_2016, hists1D_2017, hists1D_2018, hists1DTotal);
 
     outFile->cd();
-    for(auto &temp:{hists1DTotal, hists1D_2016, hists1D_2017, hists1D_2018})
-    {
-        for(auto& it:temp)
-        {
-            it.second->Write();
-        }
-    }
+    output_tree->Write();
     outFile->Write();
     outFile->Close();
 
