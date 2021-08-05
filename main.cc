@@ -99,6 +99,9 @@ float deltaR(LorentzVector& v1, LorentzVector& v2)
 {
     return sqrt((v1.eta() - v2.eta()) * (v1.eta() - v2.eta()) + (v1.phi() - v2.phi()) *(v1.phi() - v2.phi()));
 }
+    
+bool flag = false;
+std::unordered_map<std::string, float> branches;
 
 void loopTChain(TChain* ch, int year, float scale1fb, std::unordered_map<std::string, TH1D*>& hists1D, std::string current_sample) 
 {
@@ -109,8 +112,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::unordered_map<std::st
     TObjArray *listOfFiles = ch->GetListOfFiles();
     TIter fileIter(listOfFiles);
     tqdm bar;
-    std::unordered_map<std::string, float> branches;
-    bool flag = false;
 
     while ((currentFile = (TFile*)fileIter.Next())) 
     {
@@ -369,7 +370,6 @@ int main(int argc, char* argv[])
         loopTChain(ch_2018, 2018, scale1fb_2018[sample], hists1D_2018, sample);
         delete ch_2018;
     }
-    addHists(hists1D_2016, hists1D_2017, hists1D_2018, hists1DTotal);
 
     outFile->cd();
     output_tree->Write();

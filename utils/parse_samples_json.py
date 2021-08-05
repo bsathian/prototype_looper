@@ -2,7 +2,7 @@ import json
 import glob
 
 years = [2016, 2017, 2018]
-f = json.load(open("samples_new.json"))
+f = json.load(open("samples.json"))
 
 samples = f.keys()
 for year in years:
