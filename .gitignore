@@ -1,3 +1,4 @@
 *.out
 looper.exe
 *.root
+.ipynb_checkpoints/
