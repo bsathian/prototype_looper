@@ -7,17 +7,11 @@ scale1fb:0.881131204632
 ds:VH
 scale1fb:1.3472078197e-06
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/VHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_private_mc18/skimNano-Hggselection__v5/210215_230611/0000/
-ds:HH_ggWW_semileptonic
-scale1fb:4.78992952427e-08
-/hadoop/cms/store/user/legianni/skimNano-Hggselection/GluGluToHHTo2G2Qlnu_node_SM_TuneCP5_PSWeights_13TeV-madgraph-pythia8_private_mc18/skimNano-Hggselection__v5/210223_224523/0000/
 ds:ZGamma
 scale1fb:1.30053962811e-05
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/ZGToLLG_01J_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8_private_mc18_2/skimNano-Hggselection__v5/210215_234245/0000/
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/ZGToLLG_01J_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8_private_mc18_3/skimNano-Hggselection__v5/210215_234431/0000/
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/ZGToLLG_01J_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8_private_mc18/skimNano-Hggselection__v5/210215_234050/0000/
-ds:HH_ggZZ
-scale1fb:3.73196545128e-09
-/hadoop/cms/store/user/legianni/skimNano-Hggselection/HHggZZ_Era2018_private_mc18/skimNano-Hggselection__v5/210217_093711/0000/
 ds:DiPhoton
 scale1fb:0.0131396245461
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/DiPhotonJetsBox_MGG-80toInf_13TeV-Sherpa_private_mc18/skimNano-Hggselection__v5/210215_162125/0000/
@@ -42,9 +36,6 @@ scale1fb:2.46529062895
 ds:WGamma
 scale1fb:2.04692378786e-05
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/WGToLNuG_01J_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8_private_mc18/skimNano-Hggselection__v5/210215_231105/0000/
-ds:HH_ggWW_dileptonic
-scale1fb:7.58074076668e-09
-/hadoop/cms/store/user/legianni/skimNano-Hggselection/GluGluToHHTo2G2l2nu_node_SM_TuneCP5_PSWeights_13TeV-madgraph-pythia8_private_mc18/skimNano-Hggselection__v5/210215_171641/0000/
 ds:GJets_HT-400To600
 scale1fb:0.0586975844546
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/GJets_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8_private_mc18/skimNano-Hggselection__v5/210215_165925/0000/

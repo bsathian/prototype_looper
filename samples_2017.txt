@@ -7,15 +7,9 @@ scale1fb:0.866817781465
 ds:VH
 scale1fb:1.24872840669e-06
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/VHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_private_mc17/skimNano-Hggselection__v5/210215_230747/0000/
-ds:HH_ggWW_semileptonic
-scale1fb:5.18902213766e-08
-/hadoop/cms/store/user/legianni/skimNano-Hggselection/GluGluToHHTo2G2Qlnu_node_SM_TuneCP5_PSWeights_13TeV-madgraph-pythia8_private_mc17/skimNano-Hggselection__v5/210223_224635/0000/
 ds:ZGamma
 scale1fb:1.68313255569e-05
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/ZGToLLG_01J_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8_private_mc17/skimNano-Hggselection__v5/210215_234609/0000/
-ds:HH_ggZZ
-scale1fb:4.09597423296e-09
-/hadoop/cms/store/user/legianni/skimNano-Hggselection/HHggZZ_Era2017_private_mc17/skimNano-Hggselection__v5/210217_093552/0000/
 ds:DiPhoton
 scale1fb:0.00392253167258
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/DiPhotonJetsBox_MGG-80toInf_13TeV-Sherpa_private_mc17/skimNano-Hggselection__v5/210215_162239/0000/
@@ -41,9 +35,6 @@ scale1fb:4.14669908392
 ds:WGamma
 scale1fb:2.06905204124e-05
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/WGToLNuG_01J_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8_private_mc17/skimNano-Hggselection__v5/210215_231254/0000/
-ds:HH_ggWW_dileptonic
-scale1fb:7.58091141013e-09
-/hadoop/cms/store/user/legianni/skimNano-Hggselection/GluGluToHHTo2G2l2nu_node_SM_TuneCP5_PSWeights_13TeV-madgraph-pythia8_private_mc17/skimNano-Hggselection__v5/210215_171755/0000/
 ds:GJets_HT-400To600
 scale1fb:0.0588345838735
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/GJets_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8_private_mc17/skimNano-Hggselection__v5/210215_170038/0000/
