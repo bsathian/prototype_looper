@@ -30,7 +30,7 @@ scale1fb:4.37489120892e-06
 ds:TTGamma
 scale1fb:0.000120726784717
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/TTGJets_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8_private_mc18/skimNano-Hggselection__v5/210215_221806/0000/
-ds:GJets_HT40To100
+ds:GJets_HT-40To100
 scale1fb:2.46529062895
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/GJets_HT-40To100_TuneCP5_13TeV-madgraphMLM-pythia8_private_mc18/skimNano-Hggselection__v5/210215_170420/0000/
 ds:WGamma

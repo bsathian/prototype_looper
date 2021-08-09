@@ -317,34 +317,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             branches["gg_dR"] = deltaR(nt.selectedPhoton_eta()[0], nt.selectedPhoton_phi()[0], nt.selectedPhoton_eta()[1], nt.selectedPhoton_phi()[1]);
 
             //lepton and jet branches - default values
-            
-            branches["ele1_pt"] = -999;
-            branches["ele1_eta"] = -999;
-            branches["ele1_phi"] = -999;
-            branches["ele1_tightID"] = -999;
-            branches["ele1_charge"] = -999;
-            branches["muon1_pt"] = -999;
-            branches["muon1_eta"] = -999;
-            branches["muon1_phi"] = -999;
-            branches["muon1_tightID"] = -999;
-            branches["muon1_charge"] = -999;
-
-            branches["tau1_pt"] = -999;
-            branches["tau1_eta"] = -999;
-            branches["tau1_phi"] = -999;
-            branches["tau1_charge"] = -999;
-            branches["tau1_id_vs_e"] = -999;
-            branches["tau1_id_vs_m"] = -999;
-            branches["tau1_id_vs_j"] = -999;
-
-            branches["tau2_pt"] = -999;
-            branches["tau2_eta"] = -999;
-            branches["tau2_phi"] = -999;
-            branches["tau2_charge"] = -999;
-            branches["tau2_id_vs_e"] = -999;
-            branches["tau2_id_vs_m"] = -999;
-            branches["tau2_id_vs_j"] = -999;
-
             branches["jet1_pt"] = -999;
             branches["jet1_eta"] = -999;
             branches["jet1_bTag"] = -999;
@@ -354,6 +326,9 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             branches["jet2_bTag"] = -999;
             branches["jet2_id"] = -999;
             branches["m_tautau_vis"] = -999;
+            branches["pt_tautau_vis"] = -999;
+            branches["eta_tautau_vis"] = -999;
+            branches["phi_tautau_vis"] = -999;
 
             //loop through leptons and do the pre-selections
             std::vector<bool> goodElectrons, goodMuons, goodTaus;
@@ -393,9 +368,12 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 }
             }
 
-            //dilepton categories
-            //priority order - mumu, emu, ee. Do not save these!
+            //dilepton categories - Reproducing Leonardo's glorious selections
             int Category = -1;
+            int lep1_pdgID = -999, lep2_pdgID = -999, lep1_charge = -999, lep2_charge = -999;
+            float lep1_pt = -999, lep1_eta = -999, lep1_phi = -999, lep1_tightID = -999, lep1_id_vs_e = -999, lep1_id_vs_m = -999, lep1_id_vs_j = -999, lep1_mass = -999;
+            float lep2_pt = -999, lep2_eta = -999, lep2_phi = -999, lep2_tightID = -999, lep2_id_vs_e = -999, lep2_id_vs_m = -999, lep2_id_vs_j = -999, lep2_mass = -999;
+
             size_t nGoodMuons(0), nGoodElectrons(0), nGoodTaus(0);
             for(auto it:goodMuons)
             {
@@ -423,6 +401,22 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                         Category = 4;
                         decay_1_index = i;
                         decay_2_index = j;
+
+                        lep1_pt = nt.Muon_pt()[i];
+                        lep1_eta = nt.Muon_eta()[i];
+                        lep1_phi = nt.Muon_phi()[i];
+                        lep1_mass = nt.Muon_mass()[i];
+                        lep1_tightID = nt.Muon_tightId()[i];
+                        lep1_charge = nt.Muon_charge()[i];
+                        lep1_pdgID = nt.Muon_pdgId()[i];
+
+                        lep2_pt = nt.Muon_pt()[j];
+                        lep2_eta = nt.Muon_eta()[j];
+                        lep2_phi = nt.Muon_phi()[j];
+                        lep2_mass = nt.Muon_mass()[j];
+                        lep2_tightID = nt.Muon_tightId()[j];
+                        lep2_charge = nt.Muon_charge()[j];
+                        lep2_pdgID = nt.Muon_pdgId()[j];
                     }
                 }
                 for(size_t j = 0; j < nt.Electron_pt().size(); j++)
@@ -433,6 +427,23 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                         Category = 6;
                         decay_1_index = i;
                         decay_2_index = j;
+
+                        lep1_pt = nt.Muon_pt()[i];
+                        lep1_eta = nt.Muon_eta()[i];
+                        lep1_phi = nt.Muon_phi()[i];
+                        lep1_mass = nt.Muon_mass()[i];
+                        lep1_tightID = nt.Muon_tightId()[i];
+                        lep1_charge = nt.Muon_charge()[i];
+                        lep1_pdgID = nt.Muon_pdgId()[i];
+
+                        lep2_pt = nt.Electron_pt()[j];
+                        lep2_eta = nt.Electron_eta()[j];
+                        lep2_phi = nt.Electron_phi()[j];
+                        lep2_mass = nt.Electron_mass()[j];
+                        lep2_tightID = nt.Electron_mvaFall17V2Iso_WP80()[j];
+                        lep2_charge = nt.Electron_charge()[j];
+                        lep2_pdgID = nt.Electron_pdgId()[j];
+
                     }
                 }
             }
@@ -447,6 +458,22 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                         Category = 5;
                         decay_1_index = i;
                         decay_2_index = j;
+
+                        lep1_pt = nt.Electron_pt()[i];
+                        lep1_eta = nt.Electron_eta()[i];
+                        lep1_phi = nt.Electron_phi()[i];
+                        lep1_mass = nt.Electron_mass()[i];
+                        lep1_tightID = nt.Electron_mvaFall17V2Iso_WP80()[i];
+                        lep1_charge = nt.Electron_charge()[i];
+                        lep1_pdgID = nt.Electron_pdgId()[i];
+
+                        lep2_pt = nt.Electron_pt()[j];
+                        lep2_eta = nt.Electron_eta()[j];
+                        lep2_phi = nt.Electron_phi()[j];
+                        lep2_mass = nt.Electron_mass()[j];
+                        lep2_tightID = nt.Electron_mvaFall17V2Iso_WP80()[j];
+                        lep2_charge = nt.Electron_charge()[j];
+                        lep2_pdgID = nt.Electron_pdgId()[j];
                     }
                 }
             }
@@ -458,14 +485,32 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     for(size_t i = 0; i < nt.Muon_pt().size(); i++)
                     {
                         if(not goodMuons[i]) continue;
-                        decay_1_index = i;
                         for(size_t j = 0; j < nt.Tau_pt().size(); j++)
                         {
                             if(not goodTaus[i]) continue;
                             if(nt.Muon_charge()[i] * nt.Tau_charge()[j] == -1)
                             {
                                 Category = 1;
+                                decay_1_index = i;
                                 decay_2_index = j;
+
+                                lep1_pt = nt.Muon_pt()[i];
+                                lep1_eta = nt.Muon_eta()[i];
+                                lep1_phi = nt.Muon_phi()[i];
+                                lep1_mass = nt.Muon_mass()[i];
+                                lep1_tightID = nt.Muon_tightId()[i];
+                                lep1_charge = nt.Muon_charge()[i];
+                                lep1_pdgID = nt.Muon_pdgId()[i];
+
+                                lep2_pt = nt.Tau_pt()[j];
+                                lep2_eta = nt.Tau_eta()[j];
+                                lep2_phi = nt.Tau_phi()[j];
+                                lep2_mass = nt.Tau_mass()[j];
+                                lep2_id_vs_e = nt.Tau_idDeepTau2017v2p1VSe()[j];
+                                lep2_id_vs_m = nt.Tau_idDeepTau2017v2p1VSmu()[j];
+                                lep2_id_vs_j = nt.Tau_idDeepTau2017v2p1VSjet()[j];
+                                lep2_charge = nt.Tau_charge()[j];
+                                lep2_pdgID = 15 * lep2_charge;
                             }
                         }
                     }
@@ -475,14 +520,32 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     for(size_t i = 0; i < nt.Electron_pt().size(); i++)
                     {
                         if(not goodElectrons[i]) continue;
-                        decay_1_index = i;
                         for(size_t j = 0; j < nt.Tau_pt().size(); j++)
                         {
                             if(not goodTaus[i]) continue;
                             if(nt.Electron_charge()[i] * nt.Tau_charge()[j] == -1)
                             {
-                                Category = 2;
+                                Category = 2; 
+                                decay_1_index = i;
                                 decay_2_index = j;
+
+                                lep1_pt = nt.Electron_pt()[i];
+                                lep1_eta = nt.Electron_eta()[i];
+                                lep1_phi = nt.Electron_phi()[i];
+                                lep1_mass = nt.Electron_mass()[i];
+                                lep1_tightID = nt.Electron_mvaFall17V2Iso_WP80()[i];
+                                lep1_charge = nt.Electron_charge()[i];
+                                lep1_pdgID = nt.Electron_pdgId()[i];
+
+                                lep2_pt = nt.Tau_pt()[j];
+                                lep2_eta = nt.Tau_eta()[j];
+                                lep2_phi = nt.Tau_phi()[j];
+                                lep2_mass = nt.Tau_mass()[j];
+                                lep2_id_vs_e = nt.Tau_idDeepTau2017v2p1VSe()[j];
+                                lep2_id_vs_m = nt.Tau_idDeepTau2017v2p1VSmu()[j];
+                                lep2_id_vs_j = nt.Tau_idDeepTau2017v2p1VSjet()[j];
+                                lep2_charge = nt.Tau_charge()[j];
+                                lep2_pdgID = 15 * lep2_charge;
                             }
                         }
                     }
@@ -490,19 +553,43 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 }
                 else if(nGoodMuons == 0 and nGoodElectrons == 0)
                 {
+                    bool flag = false;
                     for(size_t i = 0; i < nt.Tau_pt().size(); i++)
                     {
                         if(not goodTaus[i]) continue;
+                        decay_1_index = i;
+
+                        lep1_pt = nt.Tau_pt()[i];
+                        lep1_eta = nt.Tau_eta()[i];
+                        lep1_phi = nt.Tau_phi()[i];
+                        lep1_mass = nt.Tau_mass()[i];
+                        lep1_id_vs_e = nt.Tau_idDeepTau2017v2p1VSe()[i];
+                        lep1_id_vs_m = nt.Tau_idDeepTau2017v2p1VSmu()[i];
+                        lep1_id_vs_j = nt.Tau_idDeepTau2017v2p1VSjet()[i];
+                        lep1_charge = nt.Tau_charge()[i];
+                        lep1_pdgID = 15 * lep1_charge;
+
                         for(size_t j = i+1; j < nt.Tau_pt().size(); j++)
                         {
                             if(not goodTaus[j]) continue;
                             if(nt.Tau_charge()[i] * nt.Tau_charge()[j] == -1)
                             {
-                                decay_1_index = i;
-                                decay_2_index = j;
                                 Category = 3;
+                                decay_2_index = j;
+                                lep2_pt = nt.Tau_pt()[j];
+                                lep2_eta = nt.Tau_eta()[j];
+                                lep2_phi = nt.Tau_phi()[j];
+                                lep2_mass = nt.Tau_mass()[j];
+                                lep2_id_vs_e = nt.Tau_idDeepTau2017v2p1VSe()[j];
+                                lep2_id_vs_m = nt.Tau_idDeepTau2017v2p1VSmu()[j];
+                                lep2_id_vs_j = nt.Tau_idDeepTau2017v2p1VSjet()[j];
+                                lep2_charge = nt.Tau_charge()[j];
+                                lep2_pdgID = 15 * lep2_charge;
+                                flag = true;
+                                break;
                             }
                         }
+                        if(flag) break;
                     }
                 }
             }
@@ -524,66 +611,33 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     }
                 }
             }
-            //FIXME: ONLY ACCEPTING at least one had tau!
-            if(nGoodTaus < 1) continue;
 
-            //fill relevant branches
-            if(Category == 1)
-            {
-                //muon 1 and tau1
-                branches["muon1_pt"] = nt.Muon_pt()[decay_1_index];
-                branches["muon1_eta"] = nt.Muon_eta()[decay_1_index];
-                branches["muon1_phi"] = nt.Muon_phi()[decay_1_index];
-                branches["muon1_tightID"] = nt.Muon_tightId()[decay_1_index];
-                branches["muon1_charge"] = nt.Muon_charge()[decay_1_index];
+            //MEGA CHAD SELECTION : Accept events with at least one had tau, or at least
+            //two leptons
+            if(not(nGoodTaus >=1 or nGoodElectrons + nGoodMuons >=2 )) continue;
 
-                branches["tau1_pt"] = nt.Tau_pt()[decay_2_index];
-                branches["tau1_eta"] = nt.Tau_eta()[decay_2_index];
-                branches["tau1_phi"] = nt.Tau_phi()[decay_2_index];
-                branches["tau1_id_vs_e"] = nt.Tau_idDeepTau2017v2p1VSe()[decay_2_index];
-                branches["tau1_id_vs_m"] = nt.Tau_idDeepTau2017v2p1VSmu()[decay_2_index];
-                branches["tau1_id_vs_j"] = nt.Tau_idDeepTau2017v2p1VSjet()[decay_2_index];
-                
-                branches["m_tautau_vis"] = (nt.Muon_p4()[decay_1_index] + nt.Tau_p4()[decay_2_index]).M();
-            }
-            else if(Category == 2)
-            {
-                branches["ele1_pt"] = nt.Electron_pt()[decay_1_index];
-                branches["ele1_eta"] = nt.Electron_eta()[decay_1_index];
-                branches["ele1_phi"] = nt.Electron_phi()[decay_1_index];
-                branches["ele1_tightID"] = nt.Electron_mvaFall17V2Iso_WP80()[decay_1_index];
-                branches["ele1_charge"] = nt.Electron_charge()[decay_1_index];
-
-                branches["tau1_pt"] = nt.Tau_pt()[decay_2_index];
-                branches["tau1_eta"] = nt.Tau_eta()[decay_2_index];
-                branches["tau1_phi"] = nt.Tau_phi()[decay_2_index];
-                branches["tau1_id_vs_e"] = nt.Tau_idDeepTau2017v2p1VSe()[decay_2_index];
-                branches["tau1_id_vs_m"] = nt.Tau_idDeepTau2017v2p1VSmu()[decay_2_index];
-                branches["tau1_id_vs_j"] = nt.Tau_idDeepTau2017v2p1VSjet()[decay_2_index];
-                branches["m_tautau_vis"] = (nt.Electron_p4()[decay_1_index] + nt.Tau_p4()[decay_2_index]).M();
-
-
-            }
-            else if(Category == 3)
-            {
-                branches["tau1_pt"] = nt.Tau_pt()[decay_1_index];
-                branches["tau1_eta"] = nt.Tau_eta()[decay_1_index];
-                branches["tau1_phi"] = nt.Tau_phi()[decay_1_index];
-                branches["tau1_id_vs_e"] = nt.Tau_idDeepTau2017v2p1VSe()[decay_1_index];
-                branches["tau1_id_vs_m"] = nt.Tau_idDeepTau2017v2p1VSmu()[decay_1_index];
-                branches["tau2_id_vs_j"] = nt.Tau_idDeepTau2017v2p1VSjet()[decay_1_index];
-
-
-                branches["tau2_pt"] = nt.Tau_pt()[decay_2_index];
-                branches["tau2_eta"] = nt.Tau_eta()[decay_2_index];
-                branches["tau2_phi"] = nt.Tau_phi()[decay_2_index];
-                branches["tau2_id_vs_e"] = nt.Tau_idDeepTau2017v2p1VSe()[decay_2_index];
-                branches["tau2_id_vs_m"] = nt.Tau_idDeepTau2017v2p1VSmu()[decay_2_index];
-                branches["tau2_id_vs_j"] = nt.Tau_idDeepTau2017v2p1VSjet()[decay_2_index];
-
-                branches["m_tautau_vis"] = (nt.Tau_p4()[decay_1_index] + nt.Tau_p4()[decay_2_index]).M();
-
-            }
+            //generic branches
+            branches["lep1_pt"] = lep1_pt;
+            branches["lep1_eta"] = lep1_eta;
+            branches["lep1_phi"] = lep1_phi;
+            branches["lep1_mass"] = lep1_mass;
+            branches["lep1_pdgId"] = lep1_pdgID;
+            branches["lep1_charge"] = lep1_charge;
+            branches["lep1_tightID"] = lep1_tightID;
+            branches["lep1_id_vs_e"] = lep1_id_vs_e;
+            branches["lep1_id_vs_m"] = lep1_id_vs_m;
+            branches["lep1_id_vs_j"] = lep1_id_vs_j;
+            
+            branches["lep2_pt"] = lep2_pt;
+            branches["lep2_eta"] = lep2_eta;
+            branches["lep2_phi"] = lep2_phi;
+            branches["lep2_mass"] = lep2_mass;
+            branches["lep2_pdgId"] = lep2_pdgID;
+            branches["lep2_charge"] = lep2_charge;
+            branches["lep2_tightID"] = lep2_tightID;
+            branches["lep2_id_vs_e"] = lep2_id_vs_e;
+            branches["lep2_id_vs_m"] = lep2_id_vs_m;
+            branches["lep2_id_vs_j"] = lep2_id_vs_j;
 
             if(jet1 >= 0)
             {
@@ -601,6 +655,23 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             }
             branches["Category"] = Category;
 
+            if(Category >= 0)
+            {
+                LorentzVector decay1(lep1_pt, lep1_eta, lep1_phi, lep1_mass);
+                LorentzVector decay2(lep2_pt, lep2_eta, lep2_phi, lep2_mass);
+                LorentzVector visibleParent = decay1 + decay2;
+                branches["m_tautau_vis"] = (decay1 + decay2).M();
+                branches["pt_tautau_vis"] = (decay1 + decay2).Pt();
+                branches["eta_tautau_vis"] = (decay1 + decay2).Eta();
+                branches["phi_tautau_vis"] = (decay1 + decay2).Phi();
+            }
+            else
+            {
+                branches["m_tautau_vis"] = -999;
+                branches["pt_tautau_vis"] = -999;
+                branches["eta_tautau_vis"] = -999;
+                branches["phi_tautau_vis"] = -999;
+            }
             //write out branches
             if(not flag)
             {
@@ -610,9 +681,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 }
                 flag = true;
             }
-
             output_tree->Fill();
-
         }
 
         delete file;
@@ -630,7 +699,7 @@ void addToChain(std::unordered_map<std::string, std::vector<std::string>> datase
 
     if(datasets[setToAdd].size() == 0) //illegal file name!
     {
-        std::cout<<"wrong dataset name!"<<std::endl;
+        std::cout<<setToAdd<<" - wrong dataset name!"<<std::endl;
         exit(1);
     }
     for(auto &it:datasets[setToAdd])
@@ -719,6 +788,9 @@ int main(int argc, char* argv[])
 
     process_ids["Data"] = 0;
     process_ids["HH_ggTauTau"] = -1;
+    process_ids["HH_ggZZ"] = -2;
+    process_ids["HH_ggWW_dileptonic"] = -3;
+    process_ids["HH_ggWW_semileptonic"] = -4;
     process_ids["DiPhoton"] = 3;
     process_ids["GJets_HT-100To200"] = 8;
     process_ids["GJets_HT-200To400"] = 8;
@@ -727,7 +799,7 @@ int main(int argc, char* argv[])
     process_ids["GJets_HT-40To100"] = 8;
     process_ids["TTGG"] = 7;
     process_ids["TTGamma"] = 6;
-    process_ids["TTBar"] = 5;
+    process_ids["TTbar"] = 5;
     process_ids["VH"] = 9;
     process_ids["WGamma"] = 4;
     process_ids["ZGamma"] = 2;
@@ -753,6 +825,10 @@ int main(int argc, char* argv[])
     readFromTextFile("samples_2016.txt", samples_2016, scale1fb_2016);
     readFromTextFile("samples_2017.txt", samples_2017, scale1fb_2017);
     readFromTextFile("samples_2018.txt", samples_2018, scale1fb_2018);
+    for(auto &jt:samples_2016)
+    {
+        std::cout<<jt.first<<std::endl;
+    }
     for(auto& jt:samples_2016)
     {
         std::string sample = jt.first;

@@ -32,7 +32,7 @@ ds:TTGamma
 scale1fb:3.78116977452e-05
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/TTGJets_TuneCUETP8M1_13TeV-amcatnloFXFX-madspin-pythia8_private_mc16/skimNano-Hggselection__v5/210215_222147/0000/
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/TTGJets_TuneCUETP8M1_13TeV-amcatnloFXFX-madspin-pythia8_private_mc16_2/skimNano-Hggselection__v5/210215_222324/0000/
-ds:GJets_HT40To100
+ds:GJets_HT-40To100
 scale1fb:2.47690925473
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/GJets_HT-40To100_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_private_mc16/skimNano-Hggselection__v5/210215_170648/0000/
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/GJets_HT-40To100_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_private_mc16_2/skimNano-Hggselection__v5/210215_170803/0000/
