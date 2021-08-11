@@ -107,19 +107,14 @@ bool passElectronPreselections(int iEl)
 
     bool eta_cut = eta_cut1 and (eta_cut2 or eta_cut3);
 
-    bool dR_photons = true;
-    for(size_t iPh = 0; iPh < nt.Photon_pt().size(); iPh++)
+    bool dR_photons = false;
+
+    auto gHidx = nt.gHidx();
+    if((deltaR(nt.Electron_eta()[iEl], nt.Electron_phi()[iEl], nt.Photon_eta()[gHidx[0]], nt.Photon_phi()[gHidx[0]]) > 0.2) and (deltaR(nt.Electron_eta()[iEl], nt.Electron_phi()[iEl], nt.Photon_eta()[gHidx[1]], nt.Photon_phi()[gHidx[1]]) > 0.2))
     {
-        if(iPh != nt.gHidx()[0] and iPh != nt.gHidx()[1]) //restrict only to selected photons
-        {
-            continue;
-        }
-        if(deltaR(nt.Electron_eta()[iEl], nt.Electron_phi()[iEl], nt.Photon_eta()[iPh], nt.Photon_phi()[iPh]) <= 0.2)
-        {
-            dR_photons = false;
-            break;
-        }
+        dR_photons = true;
     }
+
     //ID cuts
     bool id_cut = nt.Electron_mvaFall17V2Iso_WP90()[iEl] or ((nt.Electron_mvaFall17V2noIso_WP90()[iEl]) and (nt.Electron_pfRelIso03_all()[iEl] < 0.3));
     //Impact parameter cuts
