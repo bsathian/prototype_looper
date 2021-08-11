@@ -55,12 +55,21 @@ bool passDiPhotonPreselections(std::string current_sample)
         mgg_mask = sideband_low or sideband_high;
     }
 
-    bool leading_pt_mgg_cut = nt.selectedPhoton_pt()[0] / nt.gg_mass() > 0.33;
-    bool trailing_pt_mgg_cut = nt.selectedPhoton_pt()[1] / nt.gg_mass() > 0.25;
+    auto gHidx = nt.gHidx();
+    bool leading_pt_mgg_cut = nt.Photon_pt()[gHidx[0]] / nt.gg_mass() > 0.33;
+    bool trailing_pt_mgg_cut = nt.Photon_pt()[gHidx[1]] / nt.gg_mass() > 0.25;
     bool pt_mgg_cut = leading_pt_mgg_cut and trailing_pt_mgg_cut;
 
-    bool trigger_cut;
-    if(current_sample == "Data")
+    //bool pt_cut = (nt.Photon_pt()[gHidx[0]] > 25) and (nt.PHoton_pt()[gHidx[1]] > 25);
+    //bool eta_cut1 = std::abs(nt.Photon_eta()[gHidx[0]]) < 2.5;
+    //bool eta_cut2 = std::abs(nt.Photon_eta()[gHidx[0]]) < 1.4442;
+    //bool eta_cut3 = std::abs(nt.Photon_eta()[gHidx[0]]) > 1.566;
+    //
+    //bool eta_cut = eta_cut1 and (eta_cut2 or eta_cut3);
+
+
+    bool trigger_cut = true;
+/*    if(current_sample == "Data")
     {
         if(year == 2016)
         {
@@ -74,18 +83,37 @@ bool passDiPhotonPreselections(std::string current_sample)
     else
     {
         trigger_cut = nt.gg_mass() > 0;
-    }
-    return mgg_mask and pt_mgg_cut and trigger_cut;
+    }*/
+
+
+    bool leading_photon_mvaID_cut = nt.Photon_mvaID()[gHidx[0]] > -0.7;
+    bool trailing_photon_mvaID_cut = nt.Photon_mvaID()[gHidx[1]] > -0.7;
+    bool mvaID_cut = leading_photon_mvaID_cut and trailing_photon_mvaID_cut;
+
+    bool leading_photon_eveto_cut = nt.Photon_electronVeto()[gHidx[0]] >= 0.5;
+    bool trailing_photon_eveto_cut = nt.Photon_electronVeto()[gHidx[1]] >= 0.5;
+    bool eveto_cut = leading_photon_eveto_cut and trailing_photon_eveto_cut;
+
+    return mgg_mask and pt_mgg_cut and trigger_cut and mvaID_cut and eveto_cut;
 }
 
 
 bool passElectronPreselections(int iEl)
 {
-    bool pt_cut = nt.Electron_pt()[iEl] > 10;
-    bool eta_cut = std::abs(nt.Electron_eta()[iEl]) < 2.4;
+    bool pt_cut = nt.Electron_pt()[iEl] > 7;
+    bool eta_cut1 = std::abs(nt.Electron_eta()[iEl]) < 2.4;
+    bool eta_cut2 = std::abs(nt.Electron_eta()[iEl] < 14442);
+    bool eta_cut3 = std::abs(nt.Electron_eta()[iEl]) > 1.566;
+
+    bool eta_cut = eta_cut1 and (eta_cut2 or eta_cut3);
+
     bool dR_photons = true;
     for(size_t iPh = 0; iPh < nt.Photon_pt().size(); iPh++)
-    {  
+    {
+        if(iPh != nt.gHidx()[0] and iPh != nt.gHidx()[1]) //restrict only to selected photons
+        {
+            continue;
+        }
         if(deltaR(nt.Electron_eta()[iEl], nt.Electron_phi()[iEl], nt.Photon_eta()[iPh], nt.Photon_phi()[iPh]) < 0.2)
         {
             dR_photons = false;
@@ -103,11 +131,17 @@ bool passElectronPreselections(int iEl)
 
 bool passMuonPreselections(unsigned int iMu)
 {
-    bool pt_cut = nt.Muon_pt()[iMu] > 10;  
-    bool eta_cut = std::abs(nt.Muon_eta()[iMu]) < 2.4;
+    bool pt_cut = nt.Muon_pt()[iMu] > 5;  
+    bool eta_cut = std::abs(nt.Muon_eta()[iMu]) < 2.5;
     bool dR_photons = true;
+    bool global_muon = nt.Muon_isGlobal()[iMu];
     for(size_t iPh = 0; iPh < nt.Photon_pt().size(); iPh++)
-    {  
+    { 
+        if(iPh != nt.gHidx()[0] and iPh != nt.gHidx()[1]) //restrict only to selected photons
+        {
+            continue;
+        }
+
         if(deltaR(nt.Muon_eta()[iMu], nt.Muon_phi()[iMu], nt.Photon_eta()[iPh], nt.Photon_phi()[iPh]) < 0.2)
         {
             dR_photons = false;
@@ -121,17 +155,19 @@ bool passMuonPreselections(unsigned int iMu)
     bool id_cut = nt.Muon_pt()[iMu] > 0; //TODO:DUMMY CUT
     bool iso_cut = nt.Muon_pfRelIso03_all()[iMu] < 0.3;
 
-    return pt_cut and eta_cut and dR_photons and id_cut and ip_dxy_cut and ip_dz_cut and iso_cut; 
+    return pt_cut and eta_cut and dR_photons and id_cut and ip_dxy_cut and ip_dz_cut and iso_cut and global_muon; 
    
 }
 
 bool passTauPreselections(unsigned int iTau, std::vector<bool> goodElectrons, std::vector<bool> goodMuons)
 {
     //hadronic tau
-    bool pt_cut = nt.Tau_pt()[iTau] > 10;
-    bool eta_cut = std::abs(nt.Tau_eta()[iTau]) < 2.4;
+    bool pt_cut = nt.Tau_pt()[iTau] > 18;
+    bool eta_cut = std::abs(nt.Tau_eta()[iTau]) < 2.3;
     bool decay_mode_cut = (nt.Tau_idDecayModeNewDMs()[iTau]);
-    
+
+    bool ip_dz_cut = std::abs(nt.Tau_dz()[iTau]) < 0.2;
+
     bool id_electron_cut = nt.Tau_idDeepTau2017v2p1VSe()[iTau] >= 1;
     bool id_muon_cut = nt.Tau_idDeepTau2017v2p1VSmu()[iTau] >= 0;
     bool id_jet_cut = nt.Tau_idDeepTau2017v2p1VSjet()[iTau] >= 7;
@@ -143,7 +179,7 @@ bool passTauPreselections(unsigned int iTau, std::vector<bool> goodElectrons, st
 
     for(size_t iEl = 0; iEl < nt.Electron_pt().size(); iEl++)
     {
-        if(not goodElectrons[iEl]) continue;
+        if(not goodElectrons[iEl]) continue; //only selected electrons
 
         if(deltaR(nt.Electron_eta()[iEl], nt.Electron_phi()[iEl], nt.Tau_eta()[iTau], nt.Tau_phi()[iTau]) < 0.2)
         {
@@ -155,7 +191,7 @@ bool passTauPreselections(unsigned int iTau, std::vector<bool> goodElectrons, st
 
     for(size_t iMu = 0; iMu < nt.Muon_pt().size(); iMu++)
     {
-        if(not goodMuons[iMu]) continue;
+        if(not goodMuons[iMu]) continue; //only selected muons
 
         if(deltaR(nt.Muon_eta()[iMu], nt.Muon_phi()[iMu], nt.Tau_eta()[iTau], nt.Tau_phi()[iTau]) < 0.2)
         {
@@ -167,6 +203,11 @@ bool passTauPreselections(unsigned int iTau, std::vector<bool> goodElectrons, st
 
     for(size_t iPh = 0; iPh < nt.Photon_pt().size(); iPh++)
     {
+        if(iPh != nt.gHidx()[0] and iPh != nt.gHidx()[1]) //restrict only to selected photons
+        {
+            continue;
+        }
+
         if(deltaR(nt.Tau_eta()[iTau], nt.Tau_phi()[iTau], nt.Photon_eta()[iPh], nt.Photon_phi()[iPh]) < 0.2)
         {
             dR_photons = false;
@@ -178,6 +219,71 @@ bool passTauPreselections(unsigned int iTau, std::vector<bool> goodElectrons, st
    return pt_cut and eta_cut and decay_mode_cut and id_electron_cut and id_muon_cut and id_jet_cut and dR_electrons and dR_muons and dR_photons; 
 }
 
+
+bool passIsotrackPreselections(unsigned int iTrk, std::vector<bool> goodElectrons, std::vector<bool> goodMuons, std::vector<bool> goodTaus, std::vector<bool> goodPhotons)
+{
+    bool fromPV = nt.IsoTrack_fromPV()[iTrk] == 0; //0th vertex
+    bool pfCand = nt.IsoTrack_isPFcand()[iTrk];
+    bool pdgCut = (abs(nt.IsoTrack_pdgId()[iTrk]) != 11 and abs(nt.IsoTrack_pdgId()[iTrk]) != 13);
+    bool ptCut = nt.IsoTrack_pt()[iTrk] > 10;
+
+    bool dR_electrons = true, dR_muons = true, dR_taus = true, dR_photons = true;
+
+    for(size_t iEl = 0; iEl < nt.Electron_pt().size(); iEl++)
+    {
+        if(not goodElectrons[iEl]) continue; //only selected electrons
+
+        if(deltaR(nt.Electron_eta()[iEl], nt.Electron_phi()[iEl], nt.IsoTrack_eta()[iTrk], nt.IsoTrack_phi()[iTrk]) < 0.2)
+        {
+            dR_electrons = false;
+            break;
+        }
+
+    }
+
+    for(size_t iMu = 0; iMu < nt.Muon_pt().size(); iMu++)
+    {
+        if(not goodMuons[iMu]) continue; //only selected muons
+
+        if(deltaR(nt.Muon_eta()[iMu], nt.Muon_phi()[iMu], nt.IsoTrack_eta()[iTrk], nt.IsoTrack_phi()[iTrk]) < 0.2)
+        {
+            dR_muons = false;
+            break;
+        }
+
+    }
+
+    for(size_t iPh = 0; iPh < nt.Photon_pt().size(); iPh++)
+    {
+        if(iPh != nt.gHidx()[0] and iPh != nt.gHidx()[1]) //restrict only to selected photons
+        {
+            continue;
+        }
+
+        if(deltaR(nt.IsoTrack_eta()[iTrk], nt.IsoTrack_phi()[iTrk], nt.Photon_eta()[iPh], nt.Photon_phi()[iPh]) < 0.2)
+        {
+            dR_photons = false;
+            break;
+        }
+
+    }
+
+    for(size_t iTau = 0; iTau < nt.Tau_pt().size(); iTau++)
+    {
+        if(not goodTaus[iTau]) continue;
+
+        if(deltaR(nt.IsoTrack_eta()[iTrk], nt.IsoTrack_phi()[iTrk], nt.Tau_eta()[iTau], nt.Tau_phi()[iTau]) < 0.2)
+        {
+            dR_taus = false;
+            break;
+        }
+
+    }
+
+    return fromPV and pfCand and pdgCut and ptCut and dR_electrons and dR_muons and dR_taus and dR_photons; 
+
+
+}
 
 bool passJetPreselections(unsigned int iJet, std::vector<bool> goodElectrons, std::vector<bool> goodMuons, std::vector<bool> goodTaus)
 {
@@ -252,7 +358,7 @@ float computeWeight(std::string current_sample, float scale1fb)
 bool flag = false;
 std::unordered_map<std::string, float> branches;
 
-void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample) 
+void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample, bool sync=false) 
 {
     ::year = year;
     int nEventsTotal = 0;
@@ -261,6 +367,11 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
     TObjArray *listOfFiles = ch->GetListOfFiles();
     TIter fileIter(listOfFiles);
     tqdm bar;
+    fstream syncOut;
+    if(sync)
+    {
+        syncOut.open("sync_"+current_sample+".txt", ios::out);
+    }
 
     while ((currentFile = (TFile*)fileIter.Next())) 
     {
@@ -614,7 +725,20 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
 
             //MEGA CHAD SELECTION : Accept events with at least one had tau, or at least
             //two leptons
-            if(not(nGoodTaus >=1 or nGoodElectrons + nGoodMuons >=2 )) continue;
+     //       if(not(nGoodTaus >=1 or nGoodElectrons + nGoodMuons >=2 )) continue;
+
+            //Z veto
+/*            if(Category == 4 or Category == 5)
+            {
+                LorentzVector lep1_p4(lep1_pt, lep1_eta, lep1_phi, lep1_mass);
+                LorentzVector lep2_p4(lep2_pt, lep2_eta, lep2_phi, lep2_mass);
+
+                float mll = (lep1_p4 + lep2_p4).M();
+                if(mll > 70 and mll < 110)
+                {
+                    continue;
+                }
+            }*/
 
             //generic branches
             branches["lep1_pt"] = lep1_pt;
@@ -682,10 +806,16 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 flag = true;
             }
             output_tree->Fill();
+
+            if(sync)
+            {
+                syncOut<<nt.run()<<","<<nt.luminosityBlock()<<","<<nt.event()<<","<<Category<<std::endl;
+            }
         }
 
         delete file;
     }
+    syncOut.close();
     bar.finish();
 
 }
@@ -735,7 +865,11 @@ void readFromTextFile(std::string fileName, std::unordered_map<std::string, std:
         }
         else
         {
-            line += "/*.root";
+            if(line.substr(line.size() - 4, std::string::npos) != "root")
+            {
+                line += "/*.root";
+            }
+
             datasets[currentDS].push_back(line);
         }
     }
@@ -748,6 +882,7 @@ int main(int argc, char* argv[])
         ("no_data", "don't run on data", cxxopts::value<bool>()->default_value("false"))
         ("select_sample", "run only on one sample", cxxopts::value<std::string>()->default_value(""))
         ("output", "output root file name", cxxopts::value<std::string>()->default_value("output.root"))
+        ("sync","run sync exercise", cxxopts::value<bool>()->default_value("false"))
         ("h, help", "Print help");
 
     auto result = options.parse(argc, argv);
@@ -767,6 +902,7 @@ int main(int argc, char* argv[])
     lumi[2018] = 59.8; 
 
     std::string select_samples = result["select_sample"].as<std::string>();
+    bool sync = result["sync"].as<bool>();
 
     is_resonant["Data"] = false;
     is_resonant["DiPhoton"] = false;
@@ -821,10 +957,17 @@ int main(int argc, char* argv[])
     outFile->cd();
     output_tree = new TTree("t", "A Baby Ntuple");
 
+    if(not sync)
+    {
+        readFromTextFile("samples_2016.txt", samples_2016, scale1fb_2016);
+        readFromTextFile("samples_2017.txt", samples_2017, scale1fb_2017);
+        readFromTextFile("samples_2018.txt", samples_2018, scale1fb_2018);
+    }
+    else
+    {
+        readFromTextFile("samples_sync.txt", samples_2016, scale1fb_2016);
+    }
 
-    readFromTextFile("samples_2016.txt", samples_2016, scale1fb_2016);
-    readFromTextFile("samples_2017.txt", samples_2017, scale1fb_2017);
-    readFromTextFile("samples_2018.txt", samples_2018, scale1fb_2018);
     for(auto &jt:samples_2016)
     {
         std::cout<<jt.first<<std::endl;
@@ -847,15 +990,21 @@ int main(int argc, char* argv[])
         TChain *ch_2018 = new TChain("Events");
 
         addToChain(samples_2016, ch_2016, TString(sample.c_str()));
-        addToChain(samples_2017, ch_2017, TString(sample.c_str()));
-        addToChain(samples_2018, ch_2018, TString(sample.c_str()));
+        if(not sync)
+        {
+            addToChain(samples_2017, ch_2017, TString(sample.c_str()));
+            addToChain(samples_2018, ch_2018, TString(sample.c_str()));
+        }
 
         std::cout<<"sample name = "<<sample<<std::endl;
-        loopTChain(ch_2016, 2016, scale1fb_2016[sample], sample);
+        loopTChain(ch_2016, 2016, scale1fb_2016[sample], sample, sync);
         delete ch_2016;
-        loopTChain(ch_2017, 2017, scale1fb_2017[sample], sample);
+        if(not sync)
+        {
+            loopTChain(ch_2017, 2017, scale1fb_2017[sample], sample);
+            loopTChain(ch_2018, 2018, scale1fb_2018[sample], sample);
+        }
         delete ch_2017;
-        loopTChain(ch_2018, 2018, scale1fb_2018[sample], sample);
         delete ch_2018;
     }
 
