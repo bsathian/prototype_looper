@@ -2,3 +2,5 @@
 looper.exe
 *.root
 .ipynb_checkpoints/
+
+sync_*.txt

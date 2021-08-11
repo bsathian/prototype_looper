@@ -101,8 +101,8 @@ bool passDiPhotonPreselections(std::string current_sample)
 bool passElectronPreselections(int iEl)
 {
     bool pt_cut = nt.Electron_pt()[iEl] > 7;
-    bool eta_cut1 = std::abs(nt.Electron_eta()[iEl]) < 2.4;
-    bool eta_cut2 = std::abs(nt.Electron_eta()[iEl] < 14442);
+    bool eta_cut1 = std::abs(nt.Electron_eta()[iEl]) < 2.5;
+    bool eta_cut2 = std::abs(nt.Electron_eta()[iEl]) < 1.4442;
     bool eta_cut3 = std::abs(nt.Electron_eta()[iEl]) > 1.566;
 
     bool eta_cut = eta_cut1 and (eta_cut2 or eta_cut3);
@@ -114,7 +114,7 @@ bool passElectronPreselections(int iEl)
         {
             continue;
         }
-        if(deltaR(nt.Electron_eta()[iEl], nt.Electron_phi()[iEl], nt.Photon_eta()[iPh], nt.Photon_phi()[iPh]) < 0.2)
+        if(deltaR(nt.Electron_eta()[iEl], nt.Electron_phi()[iEl], nt.Photon_eta()[iPh], nt.Photon_phi()[iPh]) <= 0.2)
         {
             dR_photons = false;
             break;
@@ -132,7 +132,7 @@ bool passElectronPreselections(int iEl)
 bool passMuonPreselections(unsigned int iMu)
 {
     bool pt_cut = nt.Muon_pt()[iMu] > 5;  
-    bool eta_cut = std::abs(nt.Muon_eta()[iMu]) < 2.5;
+    bool eta_cut = std::abs(nt.Muon_eta()[iMu]) < 2.4;
     bool dR_photons = true;
     bool global_muon = nt.Muon_isGlobal()[iMu];
     for(size_t iPh = 0; iPh < nt.Photon_pt().size(); iPh++)
@@ -155,7 +155,8 @@ bool passMuonPreselections(unsigned int iMu)
     bool id_cut = nt.Muon_pt()[iMu] > 0; //TODO:DUMMY CUT
     bool iso_cut = nt.Muon_pfRelIso03_all()[iMu] < 0.3;
 
-    return pt_cut and eta_cut and dR_photons and id_cut and ip_dxy_cut and ip_dz_cut and iso_cut and global_muon; 
+
+    return pt_cut and eta_cut and global_muon and dR_photons and ip_dxy_cut and ip_dz_cut and id_cut and iso_cut;
    
 }
 
@@ -809,7 +810,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
 
             if(sync)
             {
-                syncOut<<nt.run()<<","<<nt.luminosityBlock()<<","<<nt.event()<<","<<Category<<std::endl;
+                syncOut<<nt.run()<<","<<nt.luminosityBlock()<<","<<nt.event()<<","<<","<<nGoodElectrons<<","<<nGoodMuons<<","<<nGoodTaus<<","<<Category<<std::endl;
             }
         }
 
