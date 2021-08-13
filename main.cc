@@ -16,6 +16,7 @@
 #include "tqdm.h"
 #include "Nano.cc"
 #include "cxxopts.hpp"
+#include "Math/VectorUtil.h"
 
 std::unordered_map<int, float> lumi;
 
@@ -60,14 +61,6 @@ bool passDiPhotonPreselections(std::string current_sample)
     bool trailing_pt_mgg_cut = nt.Photon_pt()[gHidx[1]] / nt.gg_mass() > 0.25;
     bool pt_mgg_cut = leading_pt_mgg_cut and trailing_pt_mgg_cut;
 
-    //bool pt_cut = (nt.Photon_pt()[gHidx[0]] > 25) and (nt.PHoton_pt()[gHidx[1]] > 25);
-    //bool eta_cut1 = std::abs(nt.Photon_eta()[gHidx[0]]) < 2.5;
-    //bool eta_cut2 = std::abs(nt.Photon_eta()[gHidx[0]]) < 1.4442;
-    //bool eta_cut3 = std::abs(nt.Photon_eta()[gHidx[0]]) > 1.566;
-    //
-    //bool eta_cut = eta_cut1 and (eta_cut2 or eta_cut3);
-
-
     bool trigger_cut = true;
 /*    if(current_sample == "Data")
     {
@@ -110,7 +103,7 @@ bool passElectronPreselections(int iEl)
     bool dR_photons = false;
 
     auto gHidx = nt.gHidx();
-    if((deltaR(nt.Electron_eta()[iEl], nt.Electron_phi()[iEl], nt.Photon_eta()[gHidx[0]], nt.Photon_phi()[gHidx[0]]) > 0.2) and (deltaR(nt.Electron_eta()[iEl], nt.Electron_phi()[iEl], nt.Photon_eta()[gHidx[1]], nt.Photon_phi()[gHidx[1]]) > 0.2))
+    if((ROOT::Math::VectorUtil::DeltaR(nt.Electron_p4()[iEl], nt.Photon_p4()[gHidx[0]]) > 0.2) and (ROOT::Math::VectorUtil::DeltaR(nt.Electron_p4()[iEl], nt.Photon_p4()[gHidx[1]]) > 0.2))
     {
         dR_photons = true;
     }
@@ -128,21 +121,15 @@ bool passMuonPreselections(unsigned int iMu)
 {
     bool pt_cut = nt.Muon_pt()[iMu] > 5;  
     bool eta_cut = std::abs(nt.Muon_eta()[iMu]) < 2.4;
-    bool dR_photons = true;
+    bool dR_photons = false;
     bool global_muon = nt.Muon_isGlobal()[iMu];
-    for(size_t iPh = 0; iPh < nt.Photon_pt().size(); iPh++)
-    { 
-        if(iPh != nt.gHidx()[0] and iPh != nt.gHidx()[1]) //restrict only to selected photons
-        {
-            continue;
-        }
+    auto gHidx = nt.gHidx();
 
-        if(deltaR(nt.Muon_eta()[iMu], nt.Muon_phi()[iMu], nt.Photon_eta()[iPh], nt.Photon_phi()[iPh]) < 0.2)
-        {
-            dR_photons = false;
-            break;
-        }
+    if((ROOT::Math::VectorUtil::DeltaR(nt.Muon_p4()[iMu], nt.Photon_p4()[gHidx[0]]) > 0.2) and (ROOT::Math::VectorUtil::DeltaR(nt.Muon_p4()[iMu], nt.Photon_p4()[gHidx[1]]) > 0.2))
+    {
+        dR_photons = true;
     }
+   
     //ID cuts
     bool ip_dxy_cut = std::abs(nt.Muon_dxy()[iMu]) < 0.045;
     bool ip_dz_cut = std::abs(nt.Muon_dz()[iMu]) < 0.2;
@@ -177,7 +164,7 @@ bool passTauPreselections(unsigned int iTau, std::vector<bool> goodElectrons, st
     {
         if(not goodElectrons[iEl]) continue; //only selected electrons
 
-        if(deltaR(nt.Electron_eta()[iEl], nt.Electron_phi()[iEl], nt.Tau_eta()[iTau], nt.Tau_phi()[iTau]) < 0.2)
+        if(ROOT::Math::VectorUtil::DeltaR(nt.Electron_p4()[iEl], nt.Tau_p4()[iTau]) < 0.2)
         {
             dR_electrons = false;
             break;
@@ -189,7 +176,7 @@ bool passTauPreselections(unsigned int iTau, std::vector<bool> goodElectrons, st
     {
         if(not goodMuons[iMu]) continue; //only selected muons
 
-        if(deltaR(nt.Muon_eta()[iMu], nt.Muon_phi()[iMu], nt.Tau_eta()[iTau], nt.Tau_phi()[iTau]) < 0.2)
+        if(ROOT::Math::VectorUtil::DeltaR(nt.Muon_p4()[iMu], nt.Tau_p4()[iTau]) < 0.2)
         {
             dR_muons = false;
             break;
@@ -204,7 +191,7 @@ bool passTauPreselections(unsigned int iTau, std::vector<bool> goodElectrons, st
             continue;
         }
 
-        if(deltaR(nt.Tau_eta()[iTau], nt.Tau_phi()[iTau], nt.Photon_eta()[iPh], nt.Photon_phi()[iPh]) < 0.2)
+        if(ROOT::Math::VectorUtil::DeltaR(nt.Photon_p4()[iPh], nt.Tau_p4()[iTau]) <= 0.2)
         {
             dR_photons = false;
             break;
@@ -212,42 +199,18 @@ bool passTauPreselections(unsigned int iTau, std::vector<bool> goodElectrons, st
 
     }
 
-   return pt_cut and eta_cut and decay_mode_cut and id_electron_cut and id_muon_cut and id_jet_cut and dR_electrons and dR_muons and dR_photons; 
+    return pt_cut and eta_cut and decay_mode_cut and ip_dz_cut and id_electron_cut and id_muon_cut and id_jet_cut and dR_electrons and dR_muons and dR_photons;
 }
 
 
-bool passIsotrackPreselections(unsigned int iTrk, std::vector<bool> goodElectrons, std::vector<bool> goodMuons, std::vector<bool> goodTaus, std::vector<bool> goodPhotons)
+bool passIsotrackPreselection(unsigned int iTrk, std::vector<bool> goodElectrons, std::vector<bool> goodMuons, std::vector<bool> goodTaus)
 {
-    bool fromPV = nt.IsoTrack_fromPV()[iTrk] == 0; //0th vertex
+    bool fromPV = nt.IsoTrack_fromPV()[iTrk]; //0th vertex
     bool pfCand = nt.IsoTrack_isPFcand()[iTrk];
-    bool pdgCut = (abs(nt.IsoTrack_pdgId()[iTrk]) != 11 and abs(nt.IsoTrack_pdgId()[iTrk]) != 13);
-    bool ptCut = nt.IsoTrack_pt()[iTrk] > 10;
-
+//    bool pdgCut = (abs(nt.IsoTrack_pdgId()[iTrk]) != 11 and abs(nt.IsoTrack_pdgId()[iTrk]) != 13);
+//    bool ptCut = nt.IsoTrack_pt()[iTrk] > 10;
+    LorentzVector isoTrackP4(nt.IsoTrack_pt()[iTrk], nt.IsoTrack_eta()[iTrk], nt.IsoTrack_phi()[iTrk], 0);
     bool dR_electrons = true, dR_muons = true, dR_taus = true, dR_photons = true;
-
-    for(size_t iEl = 0; iEl < nt.Electron_pt().size(); iEl++)
-    {
-        if(not goodElectrons[iEl]) continue; //only selected electrons
-
-        if(deltaR(nt.Electron_eta()[iEl], nt.Electron_phi()[iEl], nt.IsoTrack_eta()[iTrk], nt.IsoTrack_phi()[iTrk]) < 0.2)
-        {
-            dR_electrons = false;
-            break;
-        }
-
-    }
-
-    for(size_t iMu = 0; iMu < nt.Muon_pt().size(); iMu++)
-    {
-        if(not goodMuons[iMu]) continue; //only selected muons
-
-        if(deltaR(nt.Muon_eta()[iMu], nt.Muon_phi()[iMu], nt.IsoTrack_eta()[iTrk], nt.IsoTrack_phi()[iTrk]) < 0.2)
-        {
-            dR_muons = false;
-            break;
-        }
-
-    }
 
     for(size_t iPh = 0; iPh < nt.Photon_pt().size(); iPh++)
     {
@@ -256,7 +219,7 @@ bool passIsotrackPreselections(unsigned int iTrk, std::vector<bool> goodElectron
             continue;
         }
 
-        if(deltaR(nt.IsoTrack_eta()[iTrk], nt.IsoTrack_phi()[iTrk], nt.Photon_eta()[iPh], nt.Photon_phi()[iPh]) < 0.2)
+        if(ROOT::Math::VectorUtil::DeltaR(isoTrackP4, nt.Photon_p4()[iPh]) <= 0.2)
         {
             dR_photons = false;
             break;
@@ -268,7 +231,7 @@ bool passIsotrackPreselections(unsigned int iTrk, std::vector<bool> goodElectron
     {
         if(not goodTaus[iTau]) continue;
 
-        if(deltaR(nt.IsoTrack_eta()[iTrk], nt.IsoTrack_phi()[iTrk], nt.Tau_eta()[iTau], nt.Tau_phi()[iTau]) < 0.2)
+        if(ROOT::Math::VectorUtil::DeltaR(isoTrackP4, nt.Tau_p4()[iTau]) <= 0.2)
         {
             dR_taus = false;
             break;
@@ -276,7 +239,7 @@ bool passIsotrackPreselections(unsigned int iTrk, std::vector<bool> goodElectron
 
     }
 
-    return fromPV and pfCand and pdgCut and ptCut and dR_electrons and dR_muons and dR_taus and dR_photons; 
+    return fromPV and pfCand and dR_taus and dR_photons; 
 
 
 }
@@ -439,12 +402,13 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
 
             //loop through leptons and do the pre-selections
             std::vector<bool> goodElectrons, goodMuons, goodTaus;
-
+            std::vector<size_t> goodMuonIndices, goodElectronIndices, goodTauIndices;
             for(unsigned int iEl = 0; iEl < nt.Electron_pt().size(); iEl++)
             {
                 if(passElectronPreselections(iEl))
                 {
                     goodElectrons.push_back(true);
+                    goodElectronIndices.push_back(iEl);
                 }
                 else
                 {
@@ -457,6 +421,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 if(passMuonPreselections(iMu))
                 {
                     goodMuons.push_back(true);
+                    goodMuonIndices.push_back(iMu);
                 }
                 else
                 {
@@ -468,6 +433,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 if(passTauPreselections(iTau, goodElectrons, goodMuons))
                 {
                     goodTaus.push_back(true);
+                    goodTauIndices.push_back(iTau);
                 }
                 else
                 {
@@ -475,230 +441,345 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 }
             }
 
+            std::vector<bool> goodIsoTracks;
+            std::vector<int> goodIsoTrackIndices;
+            for(size_t iTrk = 0; iTrk < nt.IsoTrack_pt().size(); iTrk++)
+            {
+                if(passIsotrackPreselection(iTrk, goodElectrons, goodMuons, goodTaus))
+                {
+                    goodIsoTracks.push_back(iTrk); 
+                    goodIsoTrackIndices.push_back(iTrk);
+                }
+                else
+                {
+                    goodIsoTracks.push_back(false);
+                }
+            }
+
             //dilepton categories - Reproducing Leonardo's glorious selections
-            int Category = -1;
+            int Category = -999;
             int lep1_pdgID = -999, lep2_pdgID = -999, lep1_charge = -999, lep2_charge = -999;
             float lep1_pt = -999, lep1_eta = -999, lep1_phi = -999, lep1_tightID = -999, lep1_id_vs_e = -999, lep1_id_vs_m = -999, lep1_id_vs_j = -999, lep1_mass = -999;
             float lep2_pt = -999, lep2_eta = -999, lep2_phi = -999, lep2_tightID = -999, lep2_id_vs_e = -999, lep2_id_vs_m = -999, lep2_id_vs_j = -999, lep2_mass = -999;
 
-            size_t nGoodMuons(0), nGoodElectrons(0), nGoodTaus(0);
-            for(auto it:goodMuons)
+            size_t nGoodMuons(0), nGoodElectrons(0), nGoodTaus(0), nGoodIsoTracks;
+
+            nGoodMuons = goodMuonIndices.size();
+            nGoodElectrons = goodElectronIndices.size();
+            nGoodTaus = goodTauIndices.size();
+            nGoodIsoTracks = goodIsoTrackIndices.size();
+
+            bool ZFlag = false;
+            //FIXME:Checking only good electrons and good muons!
+            for(size_t i = 0; i < nGoodElectrons;i++)
             {
-                nGoodMuons += it;
+                for(size_t j = i + 1; j < nGoodElectrons; j++)
+                {
+                    if(nt.Electron_charge()[goodElectronIndices[i]] * nt.Electron_charge()[goodElectronIndices[j]] < 0)
+                    {
+                        float mll = (nt.Electron_p4()[goodElectronIndices[i]] + nt.Electron_p4()[goodElectronIndices[j]]).M();
+                        if(mll >= 70 and mll <= 110)
+                        {
+                            ZFlag = true;
+                        }
+                    }
+                }
             }
-            for(auto it:goodElectrons)
+
+            for(size_t i = 0; i < nGoodMuons;i++)
             {
-                nGoodElectrons += it;
+                for(size_t j = i + 1; j < nGoodMuons; j++)
+                {
+                    if(nt.Muon_charge()[goodMuonIndices[i]] * nt.Muon_charge()[goodMuonIndices[j]] < 0)
+                    {
+                        float mll = (nt.Muon_p4()[goodMuonIndices[i]] + nt.Muon_p4()[goodMuonIndices[j]]).M();
+                        if(mll >= 70 and mll <= 110)
+                        {
+                            ZFlag = true;
+                        }
+                    }
+                }
             }
-            for(auto it:goodTaus)
-            {
-                nGoodTaus += it;
-            }
+            //Z boson veto! - all pairs!
+            if(ZFlag) continue;
+
             int decay_1_index, decay_2_index;
 
-            for(size_t i = 0; i < nt.Muon_pt().size(); i++)
+
+            //Implementing Claudio's suggestions
+            float finalState_massPair = -999;
+            for(size_t i = 0; i < nGoodTaus; i++)
             {
-                if(not goodMuons[i]) continue;
-                for(size_t j  = i+1; j < nt.Muon_pt().size(); j++)
+                for(size_t j = i+1; j < nGoodTaus; j++)
                 {
-                    if(not goodMuons[j]) continue;
+                
+                    if(nt.Tau_charge()[goodTauIndices[i]] * nt.Tau_charge()[goodTauIndices[j]] < 0)
+                    {  
+                        float temp = (nt.Tau_p4()[goodTauIndices[i]] +nt.Tau_p4()[goodTauIndices[j]]).M();
+                        //if temp is closer to 125 than finalState_massPair is, then we keep temp
+                        if(finalState_massPair >=0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
+                        {
+                            continue;
+                        }
 
-                    if(nt.Muon_charge()[i] * nt.Muon_charge()[j] == -1 and nGoodElectrons + nGoodMuons == 2)
-                    {
-                        Category = 4;
+                        Category = 3;                  
                         decay_1_index = i;
                         decay_2_index = j;
+                        lep1_pt = nt.Tau_pt()[goodTauIndices[i]];
+                        lep1_eta = nt.Tau_eta()[goodTauIndices[i]];
+                        lep1_phi = nt.Tau_phi()[goodTauIndices[i]];
+                        lep1_mass = nt.Tau_mass()[goodTauIndices[i]];
+                        lep1_id_vs_e = nt.Tau_idDeepTau2017v2p1VSe()[goodTauIndices[i]];
+                        lep1_id_vs_m = nt.Tau_idDeepTau2017v2p1VSmu()[goodTauIndices[i]];
+                        lep1_id_vs_j = nt.Tau_idDeepTau2017v2p1VSjet()[goodTauIndices[i]];
+                        lep1_charge = nt.Tau_charge()[goodTauIndices[i]];
+                        lep1_pdgID = nt.Tau_charge()[goodTauIndices[i]] * 15;
 
-                        lep1_pt = nt.Muon_pt()[i];
-                        lep1_eta = nt.Muon_eta()[i];
-                        lep1_phi = nt.Muon_phi()[i];
-                        lep1_mass = nt.Muon_mass()[i];
-                        lep1_tightID = nt.Muon_tightId()[i];
-                        lep1_charge = nt.Muon_charge()[i];
-                        lep1_pdgID = nt.Muon_pdgId()[i];
-
-                        lep2_pt = nt.Muon_pt()[j];
-                        lep2_eta = nt.Muon_eta()[j];
-                        lep2_phi = nt.Muon_phi()[j];
-                        lep2_mass = nt.Muon_mass()[j];
-                        lep2_tightID = nt.Muon_tightId()[j];
-                        lep2_charge = nt.Muon_charge()[j];
-                        lep2_pdgID = nt.Muon_pdgId()[j];
+                        lep2_pt = nt.Tau_pt()[goodTauIndices[j]];
+                        lep2_eta = nt.Tau_eta()[goodTauIndices[j]];
+                        lep2_phi = nt.Tau_phi()[goodTauIndices[j]];
+                        lep2_mass = nt.Tau_mass()[goodTauIndices[j]];
+                        lep2_id_vs_e = nt.Tau_idDeepTau2017v2p1VSe()[goodTauIndices[j]];
+                        lep2_id_vs_m = nt.Tau_idDeepTau2017v2p1VSmu()[goodTauIndices[j]];
+                        lep2_id_vs_j = nt.Tau_idDeepTau2017v2p1VSjet()[goodTauIndices[j]];
+                        lep2_charge = nt.Tau_charge()[goodTauIndices[j]];
+                        lep2_pdgID = nt.Tau_charge()[goodTauIndices[j]] * 15;
+                        
                     }
+
                 }
-                for(size_t j = 0; j < nt.Electron_pt().size(); j++)
+            }
+
+
+            finalState_massPair = -999;
+            if(Category < 0)
+            {
+                for(size_t i = 0; i < nGoodTaus; i++)
                 {
-                    if(not goodElectrons[i]) continue;
-                    if(nt.Muon_charge()[i] * nt.Electron_charge()[j] == -1 and nGoodElectrons + nGoodMuons == 2)
+                    for(size_t j = 0; j < nGoodMuons; j++)
                     {
-                        Category = 6;
-                        decay_1_index = i;
-                        decay_2_index = j;
+                        if(nt.Tau_charge()[goodTauIndices[i]] * nt.Muon_charge()[goodMuonIndices[j]] < 0)
+                        {  
+                            float temp = (nt.Tau_p4()[goodTauIndices[i]] +nt.Muon_p4()[goodMuonIndices[j]]).M();
+                            //if temp is closer to 125 than finalState_massPair is, then we keep temp
+                            if(finalState_massPair >=0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
+                            {
+                                continue;
+                            }
 
-                        lep1_pt = nt.Muon_pt()[i];
-                        lep1_eta = nt.Muon_eta()[i];
-                        lep1_phi = nt.Muon_phi()[i];
-                        lep1_mass = nt.Muon_mass()[i];
-                        lep1_tightID = nt.Muon_tightId()[i];
-                        lep1_charge = nt.Muon_charge()[i];
-                        lep1_pdgID = nt.Muon_pdgId()[i];
+                            Category = 1;
+                            decay_1_index = i;
+                            decay_2_index = j;
+                            lep1_pt = nt.Muon_pt()[goodMuonIndices[j]];
+                            lep1_eta = nt.Muon_eta()[goodMuonIndices[j]];
+                            lep1_phi = nt.Muon_phi()[goodMuonIndices[j]];
+                            lep1_mass = nt.Muon_mass()[goodMuonIndices[j]];
+                            lep1_tightID = nt.Muon_tightId()[goodMuonIndices[j]];
+                            lep1_charge = nt.Muon_charge()[goodMuonIndices[j]];
+                            lep1_pdgID = nt.Muon_pdgId()[goodMuonIndices[j]];
 
-                        lep2_pt = nt.Electron_pt()[j];
-                        lep2_eta = nt.Electron_eta()[j];
-                        lep2_phi = nt.Electron_phi()[j];
-                        lep2_mass = nt.Electron_mass()[j];
-                        lep2_tightID = nt.Electron_mvaFall17V2Iso_WP80()[j];
-                        lep2_charge = nt.Electron_charge()[j];
-                        lep2_pdgID = nt.Electron_pdgId()[j];
-
+                            lep2_pt = nt.Tau_pt()[goodTauIndices[i]];
+                            lep2_eta = nt.Tau_eta()[goodTauIndices[i]];
+                            lep2_phi = nt.Tau_phi()[goodTauIndices[i]];
+                            lep2_mass = nt.Tau_mass()[goodTauIndices[i]];
+                            lep2_id_vs_e = nt.Tau_idDeepTau2017v2p1VSe()[goodTauIndices[i]];
+                            lep2_id_vs_m = nt.Tau_idDeepTau2017v2p1VSmu()[goodTauIndices[i]];
+                            lep2_id_vs_j = nt.Tau_idDeepTau2017v2p1VSjet()[goodTauIndices[i]];
+                            lep2_charge = nt.Tau_charge()[goodTauIndices[i]];
+                            lep2_pdgID = nt.Tau_charge()[goodTauIndices[i]] * 15;
+                        }
                     }
                 }
             }
-            for(size_t i = 0; i < nt.Electron_pt().size(); i++)
+
+            finalState_massPair = -999;
+            if(Category < 0)
             {
-                if(not goodElectrons[i]) continue;
-                for(size_t j = i+1; j < nt.Electron_pt().size(); j++)
+                for(size_t i = 0; i < nGoodTaus; i++)
                 {
-                    if(not goodElectrons[j]) continue;
-                    if(nt.Electron_charge()[i] * nt.Electron_charge()[j] == -1 and nGoodElectrons + nGoodMuons == 2)
+                    for(size_t j = 0; j < nGoodElectrons; j++)
                     {
-                        Category = 5;
-                        decay_1_index = i;
-                        decay_2_index = j;
+                        if(nt.Tau_charge()[goodTauIndices[i]] * nt.Electron_charge()[goodElectronIndices[j]] < 0)
+                        {  
+                            float temp = (nt.Tau_p4()[goodTauIndices[i]] +nt.Electron_p4()[goodElectronIndices[j]]).M();
+                            //if temp is closer to 125 than finalState_massPair is, then we keep temp
+                            if(finalState_massPair >=0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
+                            {
+                                continue;
+                            }
 
-                        lep1_pt = nt.Electron_pt()[i];
-                        lep1_eta = nt.Electron_eta()[i];
-                        lep1_phi = nt.Electron_phi()[i];
-                        lep1_mass = nt.Electron_mass()[i];
-                        lep1_tightID = nt.Electron_mvaFall17V2Iso_WP80()[i];
-                        lep1_charge = nt.Electron_charge()[i];
-                        lep1_pdgID = nt.Electron_pdgId()[i];
+                            Category = 2;
+                            decay_1_index = i;
+                            decay_2_index = j;
+                            lep1_pt = nt.Electron_pt()[goodElectronIndices[j]];
+                            lep1_eta = nt.Electron_eta()[goodElectronIndices[j]];
+                            lep1_phi = nt.Electron_phi()[goodElectronIndices[j]];
+                            lep1_mass = nt.Electron_mass()[goodElectronIndices[j]];
+                            lep1_tightID = nt.Electron_mvaFall17V2Iso_WP80()[goodElectronIndices[j]];
+                            lep1_charge = nt.Electron_charge()[goodElectronIndices[j]];
+                            lep1_pdgID = nt.Electron_pdgId()[goodElectronIndices[j]];
 
-                        lep2_pt = nt.Electron_pt()[j];
-                        lep2_eta = nt.Electron_eta()[j];
-                        lep2_phi = nt.Electron_phi()[j];
-                        lep2_mass = nt.Electron_mass()[j];
-                        lep2_tightID = nt.Electron_mvaFall17V2Iso_WP80()[j];
-                        lep2_charge = nt.Electron_charge()[j];
-                        lep2_pdgID = nt.Electron_pdgId()[j];
+                            lep2_pt = nt.Tau_pt()[goodTauIndices[i]];
+                            lep2_eta = nt.Tau_eta()[goodTauIndices[i]];
+                            lep2_phi = nt.Tau_phi()[goodTauIndices[i]];
+                            lep2_mass = nt.Tau_mass()[goodTauIndices[i]];
+                            lep2_id_vs_e = nt.Tau_idDeepTau2017v2p1VSe()[goodTauIndices[i]];
+                            lep2_id_vs_m = nt.Tau_idDeepTau2017v2p1VSmu()[goodTauIndices[i]];
+                            lep2_id_vs_j = nt.Tau_idDeepTau2017v2p1VSjet()[goodTauIndices[i]];
+                            lep2_charge = nt.Tau_charge()[goodTauIndices[i]];
+                            lep2_pdgID = nt.Tau_charge()[goodTauIndices[i]] * 15;
+                        }
+                    }
+                }
+
+            }
+            finalState_massPair = -999;
+            if(Category < 0)
+            {
+                for(size_t i = 0; i < nGoodMuons; i++)
+                {
+                    for(size_t j = 0; j < nGoodElectrons; j++)
+                    {
+                        if(nt.Muon_charge()[goodMuonIndices[i]] * nt.Electron_charge()[goodElectronIndices[j]] < 0)
+                        {  
+                            float temp = (nt.Muon_p4()[goodMuonIndices[i]] + nt.Electron_p4()[goodElectronIndices[j]]).M();
+                            //if temp is closer to 125 than finalState_massPair is, then we keep temp
+                            if(finalState_massPair >=0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
+                            {
+                                continue;
+                            }
+
+                            Category = 6;
+                            decay_1_index = i;
+                            decay_2_index = j;
+
+                            lep1_pt = nt.Muon_pt()[goodMuonIndices[i]];
+                            lep1_eta = nt.Muon_eta()[goodMuonIndices[i]];
+                            lep1_phi = nt.Muon_phi()[goodMuonIndices[i]];
+                            lep1_mass = nt.Muon_mass()[goodMuonIndices[i]];
+                            lep1_tightID = nt.Muon_tightId()[goodMuonIndices[i]];
+                            lep1_charge = nt.Muon_charge()[goodMuonIndices[i]];
+                            lep1_pdgID = nt.Muon_pdgId()[goodMuonIndices[i]];
+
+                            lep2_pt = nt.Electron_pt()[goodElectronIndices[j]];
+                            lep2_eta = nt.Electron_eta()[goodElectronIndices[j]];
+                            lep2_phi = nt.Electron_phi()[goodElectronIndices[j]];
+                            lep2_mass = nt.Electron_mass()[goodElectronIndices[j]];
+                            lep2_tightID = nt.Electron_mvaFall17V2Iso_WP80()[goodElectronIndices[j]];
+                            lep2_charge = nt.Electron_charge()[goodElectronIndices[j]];
+                            lep2_pdgID = nt.Electron_pdgId()[goodElectronIndices[j]];
+
+                        }
+                    }
+                }
+           
+            }
+
+            finalState_massPair = -999;
+            if(Category < 0)
+            {
+                for(size_t i = 0; i < nGoodMuons; i++)
+                {
+                    for(size_t j = i+1; j < nGoodMuons; j++)
+                    {
+                        if(nt.Muon_charge()[goodMuonIndices[i]] * nt.Muon_charge()[goodMuonIndices[j]] < 0)
+                        {  
+                            float temp = (nt.Muon_p4()[goodMuonIndices[i]] + nt.Muon_p4()[goodMuonIndices[j]]).M();
+                            //if temp is closer to 125 than finalState_massPair is, then we keep temp
+                            if(finalState_massPair >=0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
+                            {
+                                continue;
+                            }
+
+                            Category = 4;
+                            decay_1_index = i;
+                            decay_2_index = j;
+
+                            lep1_pt = nt.Muon_pt()[goodMuonIndices[i]];
+                            lep1_eta = nt.Muon_eta()[goodMuonIndices[i]];
+                            lep1_phi = nt.Muon_phi()[goodMuonIndices[i]];
+                            lep1_mass = nt.Muon_mass()[goodMuonIndices[i]];
+                            lep1_tightID = nt.Muon_tightId()[goodMuonIndices[i]];
+                            lep1_charge = nt.Muon_charge()[goodMuonIndices[i]];
+                            lep1_pdgID = nt.Muon_pdgId()[goodMuonIndices[i]];
+
+                            lep2_pt = nt.Muon_pt()[goodMuonIndices[j]];
+                            lep2_eta = nt.Muon_eta()[goodMuonIndices[j]];
+                            lep2_phi = nt.Muon_phi()[goodMuonIndices[j]];
+                            lep2_mass = nt.Muon_mass()[goodMuonIndices[j]];
+                            lep2_tightID = nt.Muon_tightId()[goodMuonIndices[j]];
+                            lep2_charge = nt.Muon_charge()[goodMuonIndices[j]];
+                            lep2_pdgID = nt.Muon_pdgId()[goodMuonIndices[j]];
+
+                        }
+                    }
+                }
+           
+            }           
+
+
+            finalState_massPair = -999;
+            if(Category < 0)
+            {
+                for(size_t i = 0; i < nGoodElectrons; i++)
+                {
+                    for(size_t j = i+1; j < nGoodElectrons; j++)
+                    {
+                        if(nt.Electron_charge()[goodElectronIndices[i]] * nt.Electron_charge()[goodElectronIndices[j]] < 0)
+                        {  
+                            float temp = (nt.Electron_p4()[goodElectronIndices[i]] + nt.Electron_p4()[goodElectronIndices[j]]).M();
+                            //if temp is closer to 125 than finalState_massPair is, then we keep temp
+                            if(finalState_massPair >=0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
+                            {
+                                continue;
+                            }
+
+                            Category = 5;
+                            decay_1_index = i;
+                            decay_2_index = j;
+
+                            lep1_pt = nt.Electron_pt()[goodElectronIndices[i]];
+                            lep1_eta = nt.Electron_eta()[goodElectronIndices[i]];
+                            lep1_phi = nt.Electron_phi()[goodElectronIndices[i]];
+                            lep1_mass = nt.Electron_mass()[goodElectronIndices[i]];
+                            lep1_tightID = nt.Electron_mvaFall17V2Iso_WP80()[goodElectronIndices[i]];
+                            lep1_charge = nt.Electron_charge()[goodElectronIndices[i]];
+                            lep1_pdgID = nt.Electron_pdgId()[goodElectronIndices[i]];
+
+                            lep2_pt = nt.Electron_pt()[goodElectronIndices[j]];
+                            lep2_eta = nt.Electron_eta()[goodElectronIndices[j]];
+                            lep2_phi = nt.Electron_phi()[goodElectronIndices[j]];
+                            lep2_mass = nt.Electron_mass()[goodElectronIndices[j]];
+                            lep2_tightID = nt.Electron_mvaFall17V2Iso_WP80()[goodElectronIndices[j]];
+                            lep2_charge = nt.Electron_charge()[goodElectronIndices[j]];
+                            lep2_pdgID = nt.Electron_pdgId()[goodElectronIndices[j]];
+                        }
+                    }
+                }
+           
+            } 
+            if(Category < 0)
+            {
+                for(size_t i = 0; i < nGoodTaus; i++)
+                {
+                    Category = 8;
+                    for(size_t iGoodTrk:goodIsoTrackIndices)
+                    {
+                        int isoTrack_charge = nt.IsoTrack_pdgId()[iGoodTrk] / std::abs(nt.IsoTrack_pdgId()[iGoodTrk]);
+                        if(isoTrack_charge * nt.Tau_charge()[goodTauIndices[i]] < 0)
+                        {
+                            Category = 7;
+                            decay_1_index = i;
+                            decay_2_index = iGoodTrk;
+                        }
+
                     }
                 }
             }
 
             if(Category < 0)
             {
-                if(nGoodMuons == 1 and nGoodElectrons == 0)
-                {
-                    for(size_t i = 0; i < nt.Muon_pt().size(); i++)
-                    {
-                        if(not goodMuons[i]) continue;
-                        for(size_t j = 0; j < nt.Tau_pt().size(); j++)
-                        {
-                            if(not goodTaus[i]) continue;
-                            if(nt.Muon_charge()[i] * nt.Tau_charge()[j] == -1)
-                            {
-                                Category = 1;
-                                decay_1_index = i;
-                                decay_2_index = j;
-
-                                lep1_pt = nt.Muon_pt()[i];
-                                lep1_eta = nt.Muon_eta()[i];
-                                lep1_phi = nt.Muon_phi()[i];
-                                lep1_mass = nt.Muon_mass()[i];
-                                lep1_tightID = nt.Muon_tightId()[i];
-                                lep1_charge = nt.Muon_charge()[i];
-                                lep1_pdgID = nt.Muon_pdgId()[i];
-
-                                lep2_pt = nt.Tau_pt()[j];
-                                lep2_eta = nt.Tau_eta()[j];
-                                lep2_phi = nt.Tau_phi()[j];
-                                lep2_mass = nt.Tau_mass()[j];
-                                lep2_id_vs_e = nt.Tau_idDeepTau2017v2p1VSe()[j];
-                                lep2_id_vs_m = nt.Tau_idDeepTau2017v2p1VSmu()[j];
-                                lep2_id_vs_j = nt.Tau_idDeepTau2017v2p1VSjet()[j];
-                                lep2_charge = nt.Tau_charge()[j];
-                                lep2_pdgID = 15 * lep2_charge;
-                            }
-                        }
-                    }
-                }
-                else if(nGoodMuons == 0 and nGoodElectrons == 1)
-                {
-                    for(size_t i = 0; i < nt.Electron_pt().size(); i++)
-                    {
-                        if(not goodElectrons[i]) continue;
-                        for(size_t j = 0; j < nt.Tau_pt().size(); j++)
-                        {
-                            if(not goodTaus[i]) continue;
-                            if(nt.Electron_charge()[i] * nt.Tau_charge()[j] == -1)
-                            {
-                                Category = 2; 
-                                decay_1_index = i;
-                                decay_2_index = j;
-
-                                lep1_pt = nt.Electron_pt()[i];
-                                lep1_eta = nt.Electron_eta()[i];
-                                lep1_phi = nt.Electron_phi()[i];
-                                lep1_mass = nt.Electron_mass()[i];
-                                lep1_tightID = nt.Electron_mvaFall17V2Iso_WP80()[i];
-                                lep1_charge = nt.Electron_charge()[i];
-                                lep1_pdgID = nt.Electron_pdgId()[i];
-
-                                lep2_pt = nt.Tau_pt()[j];
-                                lep2_eta = nt.Tau_eta()[j];
-                                lep2_phi = nt.Tau_phi()[j];
-                                lep2_mass = nt.Tau_mass()[j];
-                                lep2_id_vs_e = nt.Tau_idDeepTau2017v2p1VSe()[j];
-                                lep2_id_vs_m = nt.Tau_idDeepTau2017v2p1VSmu()[j];
-                                lep2_id_vs_j = nt.Tau_idDeepTau2017v2p1VSjet()[j];
-                                lep2_charge = nt.Tau_charge()[j];
-                                lep2_pdgID = 15 * lep2_charge;
-                            }
-                        }
-                    }
-                   
-                }
-                else if(nGoodMuons == 0 and nGoodElectrons == 0)
-                {
-                    bool flag = false;
-                    for(size_t i = 0; i < nt.Tau_pt().size(); i++)
-                    {
-                        if(not goodTaus[i]) continue;
-                        decay_1_index = i;
-
-                        lep1_pt = nt.Tau_pt()[i];
-                        lep1_eta = nt.Tau_eta()[i];
-                        lep1_phi = nt.Tau_phi()[i];
-                        lep1_mass = nt.Tau_mass()[i];
-                        lep1_id_vs_e = nt.Tau_idDeepTau2017v2p1VSe()[i];
-                        lep1_id_vs_m = nt.Tau_idDeepTau2017v2p1VSmu()[i];
-                        lep1_id_vs_j = nt.Tau_idDeepTau2017v2p1VSjet()[i];
-                        lep1_charge = nt.Tau_charge()[i];
-                        lep1_pdgID = 15 * lep1_charge;
-
-                        for(size_t j = i+1; j < nt.Tau_pt().size(); j++)
-                        {
-                            if(not goodTaus[j]) continue;
-                            if(nt.Tau_charge()[i] * nt.Tau_charge()[j] == -1)
-                            {
-                                Category = 3;
-                                decay_2_index = j;
-                                lep2_pt = nt.Tau_pt()[j];
-                                lep2_eta = nt.Tau_eta()[j];
-                                lep2_phi = nt.Tau_phi()[j];
-                                lep2_mass = nt.Tau_mass()[j];
-                                lep2_id_vs_e = nt.Tau_idDeepTau2017v2p1VSe()[j];
-                                lep2_id_vs_m = nt.Tau_idDeepTau2017v2p1VSmu()[j];
-                                lep2_id_vs_j = nt.Tau_idDeepTau2017v2p1VSjet()[j];
-                                lep2_charge = nt.Tau_charge()[j];
-                                lep2_pdgID = 15 * lep2_charge;
-                                flag = true;
-                                break;
-                            }
-                        }
-                        if(flag) break;
-                    }
-                }
+                continue;
             }
 
             //jets
@@ -706,6 +787,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             int jet1(-1), jet2(-1);
             for(size_t iJet = 0; iJet < nt.Jet_pt().size(); iJet++)
             {
+                //FIXME:Overlap removed with all good leptons!!!!!!!
                 if(passJetPreselections(iJet, goodElectrons, goodMuons, goodTaus))
                 {
                     if(jet1 < 0)
@@ -719,23 +801,8 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 }
             }
 
-            //MEGA CHAD SELECTION : Accept events with at least one had tau, or at least
-            //two leptons
-     //       if(not(nGoodTaus >=1 or nGoodElectrons + nGoodMuons >=2 )) continue;
-
-            //Z veto
-/*            if(Category == 4 or Category == 5)
-            {
-                LorentzVector lep1_p4(lep1_pt, lep1_eta, lep1_phi, lep1_mass);
-                LorentzVector lep2_p4(lep2_pt, lep2_eta, lep2_phi, lep2_mass);
-
-                float mll = (lep1_p4 + lep2_p4).M();
-                if(mll > 70 and mll < 110)
-                {
-                    continue;
-                }
-            }*/
-
+            //additional leptons
+            
             //generic branches
             branches["lep1_pt"] = lep1_pt;
             branches["lep1_eta"] = lep1_eta;

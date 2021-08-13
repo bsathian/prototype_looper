@@ -1,2 +1,2 @@
 all:
-	g++ main.cc `root-config --cflags --glibs` -o looper.exe
+	g++ -g main.cc `root-config --cflags --glibs` -o looper.exe
