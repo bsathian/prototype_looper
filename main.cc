@@ -519,9 +519,10 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                         //if temp is closer to 125 than finalState_massPair is, then we keep temp
                         if(finalState_massPair >=0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
                         {
+                            std::cout<<"aaaaa"<<std::endl;
                             continue;
                         }
-
+                        finalState_massPair = temp;
                         Category = 3;                  
                         decay_1_index = i;
                         decay_2_index = j;
@@ -566,7 +567,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                             {
                                 continue;
                             }
-
+                            finalState_massPair = temp;
                             Category = 1;
                             decay_1_index = i;
                             decay_2_index = j;
@@ -607,7 +608,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                             {
                                 continue;
                             }
-
+                            finalState_massPair = temp;
                             Category = 2;
                             decay_1_index = i;
                             decay_2_index = j;
@@ -648,7 +649,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                             {
                                 continue;
                             }
-
+                            finalState_massPair = temp;
                             Category = 6;
                             decay_1_index = i;
                             decay_2_index = j;
@@ -690,7 +691,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                             {
                                 continue;
                             }
-
+                            finalState_massPair = temp;
                             Category = 4;
                             decay_1_index = i;
                             decay_2_index = j;
@@ -733,7 +734,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                             {
                                 continue;
                             }
-
+                            finalState_massPair = temp;
                             Category = 5;
                             decay_1_index = i;
                             decay_2_index = j;
