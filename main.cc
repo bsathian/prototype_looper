@@ -329,7 +329,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
     fstream syncOut;
     if(sync)
     {
-        syncOut.open("sync_"+current_sample+".txt", ios::out);
+        syncOut.open("/nfs-7/userdata/bsathian/sync_text_files/sync_"+current_sample+".txt", ios::out);
     }
 
     while ((currentFile = (TFile*)fileIter.Next())) 
@@ -766,18 +766,19 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     Category = 8;
                     for(size_t iGoodTrk:goodIsoTrackIndices)
                     {
-                            LorentzVector isoTrackP4(nt.IsoTrack_pt()[iGoodTrk], nt.IsoTrack_eta()[iGoodTrk], nt.IsoTrack_phi()[iGoodTrk], 0);
-                            float temp = (isoTrackP4 + nt.Tau_p4()[i]).M();
-                            //if temp is closer to 125 than finalState_massPair is, then we keep temp
-                            if(finalState_massPair >=0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
-                            {
-                                continue;
-                            }
-                            finalState_massPair = temp;
+                        LorentzVector isoVec(nt.IsoTrack_pt()[iGoodTrk], nt.IsoTrack_eta()[iGoodTrk], nt.IsoTrack_phi()[iGoodTrk], 0);
+
+                        float temp = (nt.Tau_p4()[i] + isoVec).M();
+                        if(finalState_massPair >= 0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
+                        {
+                            continue;
+                        }
+                        finalState_massPair = temp;
 
                         int isoTrack_charge = nt.IsoTrack_pdgId()[iGoodTrk] / std::abs(nt.IsoTrack_pdgId()[iGoodTrk]);
                         if(isoTrack_charge * nt.Tau_charge()[goodTauIndices[i]] < 0)
                         {
+
                             Category = 7;
                             decay_1_index = i;
                             decay_2_index = iGoodTrk;
@@ -882,7 +883,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
 
             if(sync)
             {
-                syncOut<<nt.run()<<","<<nt.luminosityBlock()<<","<<nt.event()<<","<<","<<nGoodElectrons<<","<<nGoodMuons<<","<<nGoodTaus<<","<<Category<<std::endl;
+                syncOut<<nt.run()<<","<<nt.luminosityBlock()<<","<<nt.event()<<","<<nGoodElectrons<<","<<nGoodMuons<<","<<nGoodTaus<<","<<Category<<std::endl;
             }
         }
 
