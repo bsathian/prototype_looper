@@ -757,7 +757,8 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     }
                 }
            
-            } 
+            }
+            finalState_massPair = -999;
             if(Category < 0)
             {
                 for(size_t i = 0; i < nGoodTaus; i++)
@@ -765,9 +766,19 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     Category = 8;
                     for(size_t iGoodTrk:goodIsoTrackIndices)
                     {
+                        LorentzVector isoVec(nt.IsoTrack_pt()[iGoodTrk], nt.IsoTrack_eta()[iGoodTrk], nt.IsoTrack_phi()[iGoodTrk], 0);
+
+                        float temp = (nt.Tau_p4()[i] + isoVec).M();
+                        if(finalState_massPair >= 0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
+                        {
+                            continue;
+                        }
+                        finalState_massPair = temp;
+
                         int isoTrack_charge = nt.IsoTrack_pdgId()[iGoodTrk] / std::abs(nt.IsoTrack_pdgId()[iGoodTrk]);
                         if(isoTrack_charge * nt.Tau_charge()[goodTauIndices[i]] < 0)
                         {
+
                             Category = 7;
                             decay_1_index = i;
                             decay_2_index = iGoodTrk;
