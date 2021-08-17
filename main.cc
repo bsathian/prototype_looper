@@ -431,7 +431,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             }
 
             std::vector<bool> goodIsoTracks;
-            std::vector<int> goodIsoTrackIndices;
+            std::vector<size_t> goodIsoTrackIndices;
             for(size_t iTrk = 0; iTrk < nt.IsoTrack_pt().size(); iTrk++)
             {
                 if(passIsotrackPreselection(iTrk, goodElectrons, goodMuons, goodTaus))
@@ -744,16 +744,17 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                             lep2_pdgID = nt.Electron_pdgId()[goodElectronIndices[j]];
                         }
                     }
-                }
-           
+                }      
             }
-            finalState_massPair = -999;
+            finalState_massPair = -1;
             if(Category < 0)
             {
                 for(size_t i = 0; i < nGoodTaus; i++)
                 {
-                    for(size_t iGoodTrk:goodIsoTrackIndices)
+                    for(size_t j = 0; j < nGoodIsoTracks; j++)
                     {
+                        size_t iGoodTrk = goodIsoTrackIndices[j];
+
                         LorentzVector isoVec(nt.IsoTrack_pt()[iGoodTrk], nt.IsoTrack_eta()[iGoodTrk], nt.IsoTrack_phi()[iGoodTrk], 0);
 
                         float temp = (nt.Tau_p4()[i] + isoVec).M();
