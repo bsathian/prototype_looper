@@ -746,7 +746,9 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     }
                 }      
             }
-            finalState_massPair = -1;
+            finalState_massPair = -999;
+
+
             if(Category < 0)
             {
                 for(size_t i = 0; i < nGoodTaus; i++)
@@ -757,19 +759,34 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
 
                         LorentzVector isoVec(nt.IsoTrack_pt()[iGoodTrk], nt.IsoTrack_eta()[iGoodTrk], nt.IsoTrack_phi()[iGoodTrk], 0);
 
-                        float temp = (nt.Tau_p4()[i] + isoVec).M();
-                        if(finalState_massPair >= 0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
-                        {
-                            continue;
-                        }
-                        finalState_massPair = temp;
-
                         if(nt.IsoTrack_pdgId()[iGoodTrk] * nt.Tau_charge()[goodTauIndices[i]] < 0)
                         {
-
+                            float temp = (nt.Tau_p4()[goodTauIndices[i]] + isoVec).M();
+                            if(finalState_massPair >= 0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
+                            {
+                                continue;
+                            }
+                            finalState_massPair = temp;
                             Category = 7;
-                            decay_1_index = i;
+                            decay_1_index = goodTauIndices[i];
                             decay_2_index = iGoodTrk;
+
+                            lep1_pt = nt.Tau_pt()[goodTauIndices[i]];
+                            lep1_eta = nt.Tau_eta()[goodTauIndices[i]];
+                            lep1_phi = nt.Tau_phi()[goodTauIndices[i]];
+                            lep1_mass = nt.Tau_mass()[goodTauIndices[i]];
+                            lep1_id_vs_e = nt.Tau_idDeepTau2017v2p1VSe()[goodTauIndices[i]];
+                            lep1_id_vs_m = nt.Tau_idDeepTau2017v2p1VSmu()[goodTauIndices[i]];
+                            lep1_id_vs_j = nt.Tau_idDeepTau2017v2p1VSjet()[goodTauIndices[i]];
+                            lep1_charge = nt.Tau_charge()[goodTauIndices[i]];
+                            lep1_pdgID = nt.Tau_charge()[goodTauIndices[i]] * 15;
+
+                            lep2_pt = nt.IsoTrack_pt()[goodIsoTrackIndices[j]];
+                            lep2_eta = nt.IsoTrack_eta()[goodIsoTrackIndices[j]];
+                            lep2_phi = nt.IsoTrack_phi()[goodIsoTrackIndices[j]];
+                            lep2_mass = 0;
+                            lep2_pdgID = nt.IsoTrack_pdgId()[goodIsoTrackIndices[j]];
+                            lep2_charge = lep2_pdgID/std::abs(lep2_pdgID);
                         }
                     }
                 }
@@ -883,6 +900,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             {
                 syncOut<<nt.run()<<","<<nt.luminosityBlock()<<","<<nt.event()<<","<<nGoodElectrons<<","<<nGoodMuons<<","<<nGoodTaus<<","<<Category<<std::endl;
             }
+           
         }
 
         delete file;
