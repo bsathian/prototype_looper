@@ -210,28 +210,19 @@ bool passIsotrackPreselection(unsigned int iTrk, std::vector<bool> goodElectrons
 //    bool pdgCut = (abs(nt.IsoTrack_pdgId()[iTrk]) != 11 and abs(nt.IsoTrack_pdgId()[iTrk]) != 13);
 //    bool ptCut = nt.IsoTrack_pt()[iTrk] > 10;
     LorentzVector isoTrackP4(nt.IsoTrack_pt()[iTrk], nt.IsoTrack_eta()[iTrk], nt.IsoTrack_phi()[iTrk], 0);
-    bool dR_electrons = true, dR_muons = true, dR_taus = true, dR_photons = true;
-
-    for(size_t iPh = 0; iPh < nt.Photon_pt().size(); iPh++)
+    bool dR_taus = true;
+    bool dR_photons = false;
+    auto gHidx = nt.gHidx();
+    if((ROOT::Math::VectorUtil::DeltaR(isoTrackP4, nt.Photon_p4()[gHidx[0]]) > 0.2) and (ROOT::Math::VectorUtil::DeltaR(isoTrackP4, nt.Photon_p4()[gHidx[1]]) > 0.2))
     {
-        if(iPh != nt.gHidx()[0] and iPh != nt.gHidx()[1]) //restrict only to selected photons
-        {
-            continue;
-        }
-
-        if(ROOT::Math::VectorUtil::DeltaR(isoTrackP4, nt.Photon_p4()[iPh]) <= 0.2)
-        {
-            dR_photons = false;
-            break;
-        }
-
+        dR_photons = true;
     }
 
     for(size_t iTau = 0; iTau < nt.Tau_pt().size(); iTau++)
     {
         if(not goodTaus[iTau]) continue;
 
-        if(ROOT::Math::VectorUtil::DeltaR(isoTrackP4, nt.Tau_p4()[iTau]) <= 0.2)
+        if(ROOT::Math::VectorUtil::DeltaR(isoTrackP4, nt.Tau_p4()[iTau]) < 0.2)
         {
             dR_taus = false;
             break;
@@ -240,8 +231,6 @@ bool passIsotrackPreselection(unsigned int iTrk, std::vector<bool> goodElectrons
     }
 
     return fromPV and pfCand and dR_taus and dR_photons; 
-
-
 }
 
 bool passJetPreselections(unsigned int iJet, std::vector<bool> goodElectrons, std::vector<bool> goodMuons, std::vector<bool> goodTaus)
@@ -447,7 +436,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             {
                 if(passIsotrackPreselection(iTrk, goodElectrons, goodMuons, goodTaus))
                 {
-                    goodIsoTracks.push_back(iTrk); 
+                    goodIsoTracks.push_back(true); 
                     goodIsoTrackIndices.push_back(iTrk);
                 }
                 else
@@ -460,7 +449,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             int Category = -999;
             int lep1_pdgID = -999, lep2_pdgID = -999, lep1_charge = -999, lep2_charge = -999;
             float lep1_pt = -999, lep1_eta = -999, lep1_phi = -999, lep1_tightID = -999, lep1_id_vs_e = -999, lep1_id_vs_m = -999, lep1_id_vs_j = -999, lep1_mass = -999;
-            float lep2_pt = -999, lep2_eta = -999, lep2_phi = -999, lep2_tightID = -999, lep2_id_vs_e = -999, lep2_id_vs_m = -999, lep2_id_vs_j = -999, lep2_mass = -999;
+            float lep2_pt = -1, lep2_eta = -999, lep2_phi = -999, lep2_tightID = -999, lep2_id_vs_e = -999, lep2_id_vs_m = -999, lep2_id_vs_j = -999, lep2_mass = -999;
 
             size_t nGoodMuons(0), nGoodElectrons(0), nGoodTaus(0), nGoodIsoTracks;
 
@@ -478,7 +467,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     if(nt.Electron_charge()[goodElectronIndices[i]] * nt.Electron_charge()[goodElectronIndices[j]] < 0)
                     {
                         float mll = (nt.Electron_p4()[goodElectronIndices[i]] + nt.Electron_p4()[goodElectronIndices[j]]).M();
-                        if(mll >= 70 and mll <= 110)
+                        if(mll > 70 and mll < 110)
                         {
                             ZFlag = true;
                         }
@@ -763,7 +752,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             {
                 for(size_t i = 0; i < nGoodTaus; i++)
                 {
-                    Category = 8;
                     for(size_t iGoodTrk:goodIsoTrackIndices)
                     {
                         LorentzVector isoVec(nt.IsoTrack_pt()[iGoodTrk], nt.IsoTrack_eta()[iGoodTrk], nt.IsoTrack_phi()[iGoodTrk], 0);
@@ -775,17 +763,26 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                         }
                         finalState_massPair = temp;
 
-                        int isoTrack_charge = nt.IsoTrack_pdgId()[iGoodTrk] / std::abs(nt.IsoTrack_pdgId()[iGoodTrk]);
-                        if(isoTrack_charge * nt.Tau_charge()[goodTauIndices[i]] < 0)
+                        if(nt.IsoTrack_pdgId()[iGoodTrk] * nt.Tau_charge()[goodTauIndices[i]] < 0)
                         {
 
                             Category = 7;
                             decay_1_index = i;
                             decay_2_index = iGoodTrk;
                         }
-
                     }
                 }
+            }
+
+            if(Category < 0)
+            {
+                for(auto &iGoodTau:goodTauIndices)
+                {
+                    Category = 8;
+                    decay_1_index = iGoodTau;
+                    decay_2_index = -1;
+                }
+
             }
 
             if(Category < 0)
