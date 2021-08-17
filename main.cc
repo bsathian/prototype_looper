@@ -329,7 +329,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
     fstream syncOut;
     if(sync)
     {
-        syncOut.open("sync_"+current_sample+".txt", ios::out);
+        syncOut.open("/nfs-7/userdata/bsathian/sync_text_files/sync_"+current_sample+".txt", ios::out);
     }
 
     while ((currentFile = (TFile*)fileIter.Next())) 
@@ -519,7 +519,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                         //if temp is closer to 125 than finalState_massPair is, then we keep temp
                         if(finalState_massPair >=0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
                         {
-                            std::cout<<"aaaaa"<<std::endl;
                             continue;
                         }
                         finalState_massPair = temp;
@@ -873,7 +872,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
 
             if(sync)
             {
-                syncOut<<nt.run()<<","<<nt.luminosityBlock()<<","<<nt.event()<<","<<","<<nGoodElectrons<<","<<nGoodMuons<<","<<nGoodTaus<<","<<Category<<std::endl;
+                syncOut<<nt.run()<<","<<nt.luminosityBlock()<<","<<nt.event()<<","<<nGoodElectrons<<","<<nGoodMuons<<","<<nGoodTaus<<","<<Category<<std::endl;
             }
         }
 
