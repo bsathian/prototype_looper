@@ -42,54 +42,11 @@ float deltaR(LorentzVector& v1, LorentzVector& v2)
 }
 
 
-bool passDiPhotonPreselections(std::string current_sample)
+
+float MT(float pt1, float pt2, float phi1, float phi2)
 {
-    bool mgg_mask;
-    if(is_resonant[current_sample])
-    {
-        mgg_mask = nt.gg_mass() > 100 and nt.gg_mass() < 180; 
-    }
-    else
-    {
-        bool sideband_low = nt.gg_mass() > 100 and nt.gg_mass() < 120;
-        bool sideband_high = nt.gg_mass() > 130 and nt.gg_mass() < 180;
-        mgg_mask = sideband_low or sideband_high;
-    }
-
-    auto gHidx = nt.gHidx();
-    bool leading_pt_mgg_cut = nt.Photon_pt()[gHidx[0]] / nt.gg_mass() > 0.33;
-    bool trailing_pt_mgg_cut = nt.Photon_pt()[gHidx[1]] / nt.gg_mass() > 0.25;
-    bool pt_mgg_cut = leading_pt_mgg_cut and trailing_pt_mgg_cut;
-
-    bool trigger_cut = true;
-/*    if(current_sample == "Data")
-    {
-        if(year == 2016)
-        {
-            trigger_cut = nt.HLT_Diphoton30_18_R9Id_OR_IsoCaloId_AND_HE_R9Id_Mass90();
-        }
-        else if(year == 2017 or year == 2018)
-        {
-             trigger_cut = nt.HLT_Diphoton30_22_R9Id_OR_IsoCaloId_AND_HE_R9Id_Mass90();
-        }
-    }
-    else
-    {
-        trigger_cut = nt.gg_mass() > 0;
-    }*/
-
-
-    bool leading_photon_mvaID_cut = nt.Photon_mvaID()[gHidx[0]] > -0.7;
-    bool trailing_photon_mvaID_cut = nt.Photon_mvaID()[gHidx[1]] > -0.7;
-    bool mvaID_cut = leading_photon_mvaID_cut and trailing_photon_mvaID_cut;
-
-    bool leading_photon_eveto_cut = nt.Photon_electronVeto()[gHidx[0]] >= 0.5;
-    bool trailing_photon_eveto_cut = nt.Photon_electronVeto()[gHidx[1]] >= 0.5;
-    bool eveto_cut = leading_photon_eveto_cut and trailing_photon_eveto_cut;
-
-    return mgg_mask and pt_mgg_cut and trigger_cut and mvaID_cut and eveto_cut;
+    return sqrt(2 * pt1 * pt2 * (1 - cos(phi1 - phi2)));
 }
-
 
 bool passElectronPreselections(int iEl)
 {
@@ -100,36 +57,21 @@ bool passElectronPreselections(int iEl)
 
     bool eta_cut = eta_cut1 and (eta_cut2 or eta_cut3);
 
-    bool dR_photons = false;
-
-    auto gHidx = nt.gHidx();
-    if((ROOT::Math::VectorUtil::DeltaR(nt.Electron_p4()[iEl], nt.Photon_p4()[gHidx[0]]) > 0.2) and (ROOT::Math::VectorUtil::DeltaR(nt.Electron_p4()[iEl], nt.Photon_p4()[gHidx[1]]) > 0.2))
-    {
-        dR_photons = true;
-    }
-
     //ID cuts
     bool id_cut = nt.Electron_mvaFall17V2Iso_WP90()[iEl] or ((nt.Electron_mvaFall17V2noIso_WP90()[iEl]) and (nt.Electron_pfRelIso03_all()[iEl] < 0.3));
     //Impact parameter cuts
     bool ip_dxy_cut = std::abs(nt.Electron_dxy()[iEl]) < 0.045;
     bool ip_dz_cut = std::abs(nt.Electron_dz()[iEl]) < 0.2;
 
-    return pt_cut and eta_cut and dR_photons and id_cut and ip_dxy_cut and ip_dz_cut;
+    return pt_cut and eta_cut and id_cut and ip_dxy_cut and ip_dz_cut;
 }
 
 bool passMuonPreselections(unsigned int iMu)
 {
     bool pt_cut = nt.Muon_pt()[iMu] > 5;  
     bool eta_cut = std::abs(nt.Muon_eta()[iMu]) < 2.4;
-    bool dR_photons = false;
     bool global_muon = nt.Muon_isGlobal()[iMu];
-    auto gHidx = nt.gHidx();
 
-    if((ROOT::Math::VectorUtil::DeltaR(nt.Muon_p4()[iMu], nt.Photon_p4()[gHidx[0]]) > 0.2) and (ROOT::Math::VectorUtil::DeltaR(nt.Muon_p4()[iMu], nt.Photon_p4()[gHidx[1]]) > 0.2))
-    {
-        dR_photons = true;
-    }
-   
     //ID cuts
     bool ip_dxy_cut = std::abs(nt.Muon_dxy()[iMu]) < 0.045;
     bool ip_dz_cut = std::abs(nt.Muon_dz()[iMu]) < 0.2;
@@ -138,7 +80,7 @@ bool passMuonPreselections(unsigned int iMu)
     bool iso_cut = nt.Muon_pfRelIso03_all()[iMu] < 0.3;
 
 
-    return pt_cut and eta_cut and global_muon and dR_photons and ip_dxy_cut and ip_dz_cut and id_cut and iso_cut;
+    return pt_cut and eta_cut and global_muon and ip_dxy_cut and ip_dz_cut and id_cut and iso_cut;
    
 }
 
@@ -158,7 +100,6 @@ bool passTauPreselections(unsigned int iTau, std::vector<bool> goodElectrons, st
     //distance from good leptons
     bool dR_electrons = true;
     bool dR_muons = true;
-    bool dR_photons = true;
 
     for(size_t iEl = 0; iEl < nt.Electron_pt().size(); iEl++)
     {
@@ -184,22 +125,7 @@ bool passTauPreselections(unsigned int iTau, std::vector<bool> goodElectrons, st
 
     }
 
-    for(size_t iPh = 0; iPh < nt.Photon_pt().size(); iPh++)
-    {
-        if(iPh != nt.gHidx()[0] and iPh != nt.gHidx()[1]) //restrict only to selected photons
-        {
-            continue;
-        }
-
-        if(ROOT::Math::VectorUtil::DeltaR(nt.Photon_p4()[iPh], nt.Tau_p4()[iTau]) <= 0.2)
-        {
-            dR_photons = false;
-            break;
-        }
-
-    }
-
-    return pt_cut and eta_cut and decay_mode_cut and ip_dz_cut and id_electron_cut and id_muon_cut and id_jet_cut and dR_electrons and dR_muons and dR_photons;
+    return pt_cut and eta_cut and decay_mode_cut and ip_dz_cut and id_electron_cut and id_muon_cut and id_jet_cut and dR_electrons and dR_muons;
 }
 
 
@@ -207,25 +133,8 @@ bool passIsotrackPreselection(unsigned int iTrk, std::vector<bool> goodElectrons
 {
     bool fromPV = nt.IsoTrack_fromPV()[iTrk]; //0th vertex
     bool pfCand = nt.IsoTrack_isPFcand()[iTrk];
-//    bool pdgCut = (abs(nt.IsoTrack_pdgId()[iTrk]) != 11 and abs(nt.IsoTrack_pdgId()[iTrk]) != 13);
-//    bool ptCut = nt.IsoTrack_pt()[iTrk] > 10;
     LorentzVector isoTrackP4(nt.IsoTrack_pt()[iTrk], nt.IsoTrack_eta()[iTrk], nt.IsoTrack_phi()[iTrk], 0);
-    bool dR_electrons = true, dR_muons = true, dR_taus = true, dR_photons = true;
-
-    for(size_t iPh = 0; iPh < nt.Photon_pt().size(); iPh++)
-    {
-        if(iPh != nt.gHidx()[0] and iPh != nt.gHidx()[1]) //restrict only to selected photons
-        {
-            continue;
-        }
-
-        if(ROOT::Math::VectorUtil::DeltaR(isoTrackP4, nt.Photon_p4()[iPh]) <= 0.2)
-        {
-            dR_photons = false;
-            break;
-        }
-
-    }
+    bool dR_electrons = true, dR_muons = true, dR_taus = true;
 
     for(size_t iTau = 0; iTau < nt.Tau_pt().size(); iTau++)
     {
@@ -239,7 +148,7 @@ bool passIsotrackPreselection(unsigned int iTrk, std::vector<bool> goodElectrons
 
     }
 
-    return fromPV and pfCand and dR_taus and dR_photons; 
+    return fromPV and pfCand and dR_taus; 
 
 
 }
@@ -251,7 +160,6 @@ bool passJetPreselections(unsigned int iJet, std::vector<bool> goodElectrons, st
     bool dR_electrons = true;
     bool dR_muons = true;
     bool dR_taus = true;
-    bool dR_photons = true;
 
     for(size_t iEl = 0; iEl < nt.Electron_pt().size(); iEl++)
     {
@@ -284,15 +192,6 @@ bool passJetPreselections(unsigned int iJet, std::vector<bool> goodElectrons, st
         }
     }
 
-    for(size_t iPho = 0; iPho < nt.Photon_pt().size(); iPho++)
-    {
-        if(deltaR(nt.Photon_eta()[iPho], nt.Photon_phi()[iPho], nt.Jet_eta()[iJet], nt.Jet_phi()[iJet]) < 0.4)
-        {
-            dR_photons= false;
-            break;
-        }
-    }
-    //ID CUT
     bool nemf_cut = nt.Jet_neEmEF()[iJet] < 0.99;
     bool nh_cut = nt.Jet_neHEF()[iJet] < 0.99;
     bool chf_cut = nt.Jet_chHEF()[iJet] > 0;
@@ -301,7 +200,7 @@ bool passJetPreselections(unsigned int iJet, std::vector<bool> goodElectrons, st
 
     bool id_cut = nemf_cut and nh_cut and chf_cut and chemef_cut and constituent_cut;
     
-    return pt_cut and eta_cut and dR_electrons and dR_muons and dR_taus and dR_photons and id_cut;
+    return pt_cut and eta_cut and dR_electrons and dR_muons and dR_taus and id_cut;
 }
 
 float computeWeight(std::string current_sample, float scale1fb)
@@ -313,7 +212,22 @@ float computeWeight(std::string current_sample, float scale1fb)
     return nt.genWeight() * scale1fb * lumi[year];
 }
 
-    
+float computeRotationOffset(LorentzVector visibleTau)
+{
+    return -visibleTau.phi();
+}
+
+LorentzVector computeHadronicActivity()
+{
+    //all jets pt > 15, so we add them blindly!
+    LorentzVector hadronicActivity(0,0,0,0);
+    for(auto &it:nt.Jet_p4())
+    {
+        hadronicActivity += it;
+    }
+    return hadronicActivity;
+}
+
 bool flag = false;
 std::unordered_map<std::string, float> branches;
 
@@ -326,11 +240,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
     TObjArray *listOfFiles = ch->GetListOfFiles();
     TIter fileIter(listOfFiles);
     tqdm bar;
-    fstream syncOut;
-    if(sync)
-    {
-        syncOut.open("sync_"+current_sample+".txt", ios::out);
-    }
 
     while ((currentFile = (TFile*)fileIter.Next())) 
     {
@@ -351,40 +260,14 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             nEventsTotal++;
             bar.progress(nEventsTotal, nEventsChain);
 
-            if(not passDiPhotonPreselections(current_sample))
-            {
-                continue;
-            }
-            
             float weight = computeWeight(current_sample, scale1fb);
 
             branches["process_id"] = process_ids[current_sample];
             branches["year"] = year;
             branches["weight"] = weight;
-            branches["mgg"] = nt.gg_mass();
 
-            branches["g1_ptmgg"] = nt.selectedPhoton_pt()[0] / nt.gg_mass();
-            branches["g2_ptmgg"] = nt.selectedPhoton_pt()[1] / nt.gg_mass();
-            branches["g1_pt"] = nt.selectedPhoton_pt()[0];
-            branches["g1_eta"] = nt.selectedPhoton_eta()[0];
-            branches["g1_phi"] = nt.selectedPhoton_phi()[0];
-            branches["g1_idmva"] = nt.selectedPhoton_mvaID()[0];
-            branches["g1_pixVeto"] = nt.selectedPhoton_pixelSeed()[0];
-
-
-            branches["g2_pt"] = nt.selectedPhoton_pt()[1];
-            branches["g2_eta"] = nt.selectedPhoton_eta()[1];
-            branches["g2_phi"] = nt.selectedPhoton_phi()[1];
-            branches["g2_idmva"] = nt.selectedPhoton_mvaID()[1];
-            branches["g2_pixVeto"] = nt.selectedPhoton_pixelSeed()[1];
-
-            branches["nJet"] = nt.nJet();
-            branches["MET_pt"] = nt.MET_pt();
-            branches["MET_phi"] = nt.MET_phi();
-            branches["gg_eta"] = nt.gg_eta();
-            branches["gg_pt"] = nt.gg_pt();
-            branches["gg_phi"] = nt.gg_phi();
-            branches["gg_dR"] = deltaR(nt.selectedPhoton_eta()[0], nt.selectedPhoton_phi()[0], nt.selectedPhoton_eta()[1], nt.selectedPhoton_phi()[1]);
+            branches["mT_decay1_MET"] = -999;
+            branches["mT_decay2_MET"] = -999;
 
             //lepton and jet branches - default values
             branches["jet1_pt"] = -999;
@@ -507,7 +390,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
 
 
             //Implementing Claudio's suggestions
-            float finalState_massPair = -999;
             for(size_t i = 0; i < nGoodTaus; i++)
             {
                 for(size_t j = i+1; j < nGoodTaus; j++)
@@ -515,13 +397,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 
                     if(nt.Tau_charge()[goodTauIndices[i]] * nt.Tau_charge()[goodTauIndices[j]] < 0)
                     {  
-                        float temp = (nt.Tau_p4()[goodTauIndices[i]] +nt.Tau_p4()[goodTauIndices[j]]).M();
-                        //if temp is closer to 125 than finalState_massPair is, then we keep temp
-                        if(finalState_massPair >=0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
-                        {
-                            continue;
-                        }
-                        finalState_massPair = temp;
                         Category = 3;                  
                         decay_1_index = i;
                         decay_2_index = j;
@@ -551,7 +426,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             }
 
 
-            finalState_massPair = -999;
             if(Category < 0)
             {
                 for(size_t i = 0; i < nGoodTaus; i++)
@@ -560,13 +434,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     {
                         if(nt.Tau_charge()[goodTauIndices[i]] * nt.Muon_charge()[goodMuonIndices[j]] < 0)
                         {  
-                            float temp = (nt.Tau_p4()[goodTauIndices[i]] +nt.Muon_p4()[goodMuonIndices[j]]).M();
-                            //if temp is closer to 125 than finalState_massPair is, then we keep temp
-                            if(finalState_massPair >=0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
-                            {
-                                continue;
-                            }
-                            finalState_massPair = temp;
                             Category = 1;
                             decay_1_index = i;
                             decay_2_index = j;
@@ -592,7 +459,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 }
             }
 
-            finalState_massPair = -999;
             if(Category < 0)
             {
                 for(size_t i = 0; i < nGoodTaus; i++)
@@ -601,13 +467,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     {
                         if(nt.Tau_charge()[goodTauIndices[i]] * nt.Electron_charge()[goodElectronIndices[j]] < 0)
                         {  
-                            float temp = (nt.Tau_p4()[goodTauIndices[i]] +nt.Electron_p4()[goodElectronIndices[j]]).M();
-                            //if temp is closer to 125 than finalState_massPair is, then we keep temp
-                            if(finalState_massPair >=0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
-                            {
-                                continue;
-                            }
-                            finalState_massPair = temp;
                             Category = 2;
                             decay_1_index = i;
                             decay_2_index = j;
@@ -633,7 +492,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 }
 
             }
-            finalState_massPair = -999;
             if(Category < 0)
             {
                 for(size_t i = 0; i < nGoodMuons; i++)
@@ -642,13 +500,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     {
                         if(nt.Muon_charge()[goodMuonIndices[i]] * nt.Electron_charge()[goodElectronIndices[j]] < 0)
                         {  
-                            float temp = (nt.Muon_p4()[goodMuonIndices[i]] + nt.Electron_p4()[goodElectronIndices[j]]).M();
-                            //if temp is closer to 125 than finalState_massPair is, then we keep temp
-                            if(finalState_massPair >=0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
-                            {
-                                continue;
-                            }
-                            finalState_massPair = temp;
                             Category = 6;
                             decay_1_index = i;
                             decay_2_index = j;
@@ -675,7 +526,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
            
             }
 
-            finalState_massPair = -999;
             if(Category < 0)
             {
                 for(size_t i = 0; i < nGoodMuons; i++)
@@ -684,13 +534,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     {
                         if(nt.Muon_charge()[goodMuonIndices[i]] * nt.Muon_charge()[goodMuonIndices[j]] < 0)
                         {  
-                            float temp = (nt.Muon_p4()[goodMuonIndices[i]] + nt.Muon_p4()[goodMuonIndices[j]]).M();
-                            //if temp is closer to 125 than finalState_massPair is, then we keep temp
-                            if(finalState_massPair >=0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
-                            {
-                                continue;
-                            }
-                            finalState_massPair = temp;
                             Category = 4;
                             decay_1_index = i;
                             decay_2_index = j;
@@ -718,7 +561,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             }           
 
 
-            finalState_massPair = -999;
             if(Category < 0)
             {
                 for(size_t i = 0; i < nGoodElectrons; i++)
@@ -727,13 +569,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     {
                         if(nt.Electron_charge()[goodElectronIndices[i]] * nt.Electron_charge()[goodElectronIndices[j]] < 0)
                         {  
-                            float temp = (nt.Electron_p4()[goodElectronIndices[i]] + nt.Electron_p4()[goodElectronIndices[j]]).M();
-                            //if temp is closer to 125 than finalState_massPair is, then we keep temp
-                            if(finalState_massPair >=0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
-                            {
-                                continue;
-                            }
-                            finalState_massPair = temp;
                             Category = 5;
                             decay_1_index = i;
                             decay_2_index = j;
@@ -758,7 +593,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 }
            
             }
-            finalState_massPair = -999;
+            /*
             if(Category < 0)
             {
                 for(size_t i = 0; i < nGoodTaus; i++)
@@ -767,13 +602,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     for(size_t iGoodTrk:goodIsoTrackIndices)
                     {
                             LorentzVector isoTrackP4(nt.IsoTrack_pt()[iGoodTrk], nt.IsoTrack_eta()[iGoodTrk], nt.IsoTrack_phi()[iGoodTrk], 0);
-                            float temp = (isoTrackP4 + nt.Tau_p4()[i]).M();
-                            //if temp is closer to 125 than finalState_massPair is, then we keep temp
-                            if(finalState_massPair >=0 and std::abs(temp-125) > std::abs(finalState_massPair - 125))
-                            {
-                                continue;
-                            }
-                            finalState_massPair = temp;
 
                         int isoTrack_charge = nt.IsoTrack_pdgId()[iGoodTrk] / std::abs(nt.IsoTrack_pdgId()[iGoodTrk]);
                         if(isoTrack_charge * nt.Tau_charge()[goodTauIndices[i]] < 0)
@@ -785,7 +613,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
 
                     }
                 }
-            }
+            }*/
 
             if(Category < 0)
             {
@@ -812,11 +640,56 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             }
 
             //additional leptons
-            
+            LorentzVector visibleParent;
+            float offsetPhi = 0;
+
+            if(Category < 7)
+            {
+                LorentzVector decay1(lep1_pt, lep1_eta, lep1_phi, lep1_mass);
+                LorentzVector decay2(lep2_pt, lep2_eta, lep2_phi, lep2_mass);
+                visibleParent = decay1 + decay2;
+                offsetPhi = computeRotationOffset(visibleParent);
+
+                branches["m_tautau_vis"] = (decay1 + decay2).M();
+                branches["pt_tautau_vis"] = (decay1 + decay2).Pt();
+                branches["eta_tautau_vis"] = (decay1 + decay2).Eta();
+                branches["phi_tautau_vis"] = (decay1 + decay2).Phi() + offsetPhi;
+
+                branches["px_tautau_vis"] = (decay1 + decay2).px();
+                branches["py_tautau_vis"] = (decay1 + decay2).py(); 
+
+            }
+            else
+            {
+                branches["m_tautau_vis"] = -999;
+                branches["pt_tautau_vis"] = -999;
+                branches["eta_tautau_vis"] = -999;
+                branches["phi_tautau_vis"] = -999;
+            }
+
+            branches["MET_covXX"] = nt.MET_covXX();
+            branches["MET_covYY"] = nt.MET_covYY();
+            branches["MET_covXY"] = nt.MET_covXY();
+            branches["MET_pt"] = nt.MET_pt();
+            branches["MET_phi"] = nt.MET_phi() + offsetPhi; 
+
+            //compute mT
+            if(Category < 7)
+            {
+                float mT_decay1_MET = MT(lep1_pt, nt.MET_pt(), lep1_phi + offsetPhi, nt.MET_phi() + offsetPhi); 
+                float mT_decay2_MET = MT(lep2_pt, nt.MET_pt(), lep2_phi + offsetPhi, nt.MET_phi() + offsetPhi); 
+                branches["mT_decay1_MET"] = mT_decay1_MET;
+                branches["mT_decay2_MET"] = mT_decay2_MET;
+            }
+             
             //generic branches
             branches["lep1_pt"] = lep1_pt;
             branches["lep1_eta"] = lep1_eta;
-            branches["lep1_phi"] = lep1_phi;
+            branches["lep1_phi"] = lep1_phi + offsetPhi;
+
+            branches["lep1_px"] = lep1_pt * cos(lep1_phi);
+            branches["lep1_py"] = lep1_pt * sin(lep1_phi);
+
             branches["lep1_mass"] = lep1_mass;
             branches["lep1_pdgId"] = lep1_pdgID;
             branches["lep1_charge"] = lep1_charge;
@@ -827,7 +700,11 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             
             branches["lep2_pt"] = lep2_pt;
             branches["lep2_eta"] = lep2_eta;
-            branches["lep2_phi"] = lep2_phi;
+            branches["lep2_phi"] = lep2_phi + offsetPhi;
+            
+            branches["lep2_px"] = lep2_pt * cos(lep2_phi);
+            branches["lep2_py"] = lep2_pt * sin(lep2_phi);
+
             branches["lep2_mass"] = lep2_mass;
             branches["lep2_pdgId"] = lep2_pdgID;
             branches["lep2_charge"] = lep2_charge;
@@ -835,7 +712,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             branches["lep2_id_vs_e"] = lep2_id_vs_e;
             branches["lep2_id_vs_m"] = lep2_id_vs_m;
             branches["lep2_id_vs_j"] = lep2_id_vs_j;
-
+        
             if(jet1 >= 0)
             {
                 branches["jet1_pt"] = nt.Jet_pt()[jet1];
@@ -852,23 +729,29 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             }
             branches["Category"] = Category;
 
-            if(Category >= 0)
+
+            //hadronic activity 
+            auto hadronicActivity = computeHadronicActivity();
+            branches["allJets_pt"] = hadronicActivity.Pt();
+            branches["allJets_eta"] = hadronicActivity.Eta();
+            branches["allJets_phi"] = hadronicActivity.Phi() + offsetPhi;
+            branches["allJets_mass"] = hadronicActivity.M() + offsetPhi;
+
+            branches["allJets_px"] = hadronicActivity.Px();
+            branches["allJets_py"] = hadronicActivity.Py();
+
+            //find the gen higgs mass
+            float gen_higgs_mass;
+            for(size_t i = 0; i < nt.GenPart_pdgId().size(); i++)
             {
-                LorentzVector decay1(lep1_pt, lep1_eta, lep1_phi, lep1_mass);
-                LorentzVector decay2(lep2_pt, lep2_eta, lep2_phi, lep2_mass);
-                LorentzVector visibleParent = decay1 + decay2;
-                branches["m_tautau_vis"] = (decay1 + decay2).M();
-                branches["pt_tautau_vis"] = (decay1 + decay2).Pt();
-                branches["eta_tautau_vis"] = (decay1 + decay2).Eta();
-                branches["phi_tautau_vis"] = (decay1 + decay2).Phi();
+                if(abs(nt.GenPart_pdgId()[i]) == 25)
+                {
+                    gen_higgs_mass = nt.GenPart_mass()[i];
+                    break;
+                }
             }
-            else
-            {
-                branches["m_tautau_vis"] = -999;
-                branches["pt_tautau_vis"] = -999;
-                branches["eta_tautau_vis"] = -999;
-                branches["phi_tautau_vis"] = -999;
-            }
+            branches["gen_higgs_mass"] = gen_higgs_mass;
+
             //write out branches
             if(not flag)
             {
@@ -880,15 +763,10 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             }
             output_tree->Fill();
 
-            if(sync)
-            {
-                syncOut<<nt.run()<<","<<nt.luminosityBlock()<<","<<nt.event()<<","<<","<<nGoodElectrons<<","<<nGoodMuons<<","<<nGoodTaus<<","<<Category<<std::endl;
-            }
         }
 
         delete file;
     }
-    syncOut.close();
     bar.finish();
 
 }
@@ -994,9 +872,11 @@ int main(int argc, char* argv[])
     is_resonant["ttH"] = true;
     is_resonant["ggH"] = true;
     is_resonant["VBFH"] = true;
+    is_resonant["HTauTau"] = true;
 
     process_ids["Data"] = 0;
     process_ids["HH_ggTauTau"] = -1;
+    process_ids["HTauTau"] = -1;
     process_ids["HH_ggZZ"] = -2;
     process_ids["HH_ggWW_dileptonic"] = -3;
     process_ids["HH_ggWW_semileptonic"] = -4;
@@ -1032,9 +912,9 @@ int main(int argc, char* argv[])
 
     if(not sync)
     {
-        readFromTextFile("samples_2016.txt", samples_2016, scale1fb_2016);
-        readFromTextFile("samples_2017.txt", samples_2017, scale1fb_2017);
-        readFromTextFile("samples_2018.txt", samples_2018, scale1fb_2018);
+        readFromTextFile("HTauTau_samples_2016.txt", samples_2016, scale1fb_2016);
+        readFromTextFile("HTauTau_samples_2017.txt", samples_2017, scale1fb_2017);
+        readFromTextFile("HTauTau_samples_2018.txt", samples_2018, scale1fb_2018);
     }
     else
     {
@@ -1063,6 +943,7 @@ int main(int argc, char* argv[])
         TChain *ch_2018 = new TChain("Events");
 
         addToChain(samples_2016, ch_2016, TString(sample.c_str()));
+        std::cout<<"Added 2016 to chain"<<std::endl;
         if(not sync)
         {
             addToChain(samples_2017, ch_2017, TString(sample.c_str()));
