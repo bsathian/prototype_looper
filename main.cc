@@ -18,6 +18,9 @@
 #include "cxxopts.hpp"
 #include "Math/VectorUtil.h"
 
+//SVfit stuff
+#include "SVfit_utils.cc"
+
 std::unordered_map<int, float> lumi;
 
 int year;
@@ -512,8 +515,8 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                         }
                         finalState_massPair = temp;
                         Category = 3;                  
-                        decay_1_index = i;
-                        decay_2_index = j;
+                        decay_1_index = goodTauIndices[i];
+                        decay_2_index = goodTauIndices[j];
                         lep1_pt = nt.Tau_pt()[goodTauIndices[i]];
                         lep1_eta = nt.Tau_eta()[goodTauIndices[i]];
                         lep1_phi = nt.Tau_phi()[goodTauIndices[i]];
@@ -557,8 +560,8 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                             }
                             finalState_massPair = temp;
                             Category = 1;
-                            decay_1_index = i;
-                            decay_2_index = j;
+                            decay_1_index = goodMuonIndices[j];
+                            decay_2_index = goodTauIndices[i];
                             lep1_pt = nt.Muon_pt()[goodMuonIndices[j]];
                             lep1_eta = nt.Muon_eta()[goodMuonIndices[j]];
                             lep1_phi = nt.Muon_phi()[goodMuonIndices[j]];
@@ -598,8 +601,8 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                             }
                             finalState_massPair = temp;
                             Category = 2;
-                            decay_1_index = i;
-                            decay_2_index = j;
+                            decay_1_index = goodElectronIndices[j];
+                            decay_2_index = goodTauIndices[i];
                             lep1_pt = nt.Electron_pt()[goodElectronIndices[j]];
                             lep1_eta = nt.Electron_eta()[goodElectronIndices[j]];
                             lep1_phi = nt.Electron_phi()[goodElectronIndices[j]];
@@ -639,8 +642,8 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                             }
                             finalState_massPair = temp;
                             Category = 6;
-                            decay_1_index = i;
-                            decay_2_index = j;
+                            decay_1_index = goodMuonIndices[i];
+                            decay_2_index = goodElectronIndices[j];
 
                             lep1_pt = nt.Muon_pt()[goodMuonIndices[i]];
                             lep1_eta = nt.Muon_eta()[goodMuonIndices[i]];
@@ -681,8 +684,8 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                             }
                             finalState_massPair = temp;
                             Category = 4;
-                            decay_1_index = i;
-                            decay_2_index = j;
+                            decay_1_index = goodMuonIndices[i];
+                            decay_2_index = goodMuonIndices[j];
 
                             lep1_pt = nt.Muon_pt()[goodMuonIndices[i]];
                             lep1_eta = nt.Muon_eta()[goodMuonIndices[i]];
@@ -724,8 +727,8 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                             }
                             finalState_massPair = temp;
                             Category = 5;
-                            decay_1_index = i;
-                            decay_2_index = j;
+                            decay_1_index = goodElectronIndices[i];
+                            decay_2_index = goodElectronIndices[j];
 
                             lep1_pt = nt.Electron_pt()[goodElectronIndices[i]];
                             lep1_eta = nt.Electron_eta()[goodElectronIndices[i]];
@@ -885,6 +888,14 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 branches["eta_tautau_vis"] = -999;
                 branches["phi_tautau_vis"] = -999;
             }
+
+            //SVFit!!
+            float m_tautau_SVFit = -999;
+            if(Category <= 3)
+            {
+                m_tautau_SVFit = SVfit_mass(nt.MET_pt() * cos(nt.MET_phi()), nt.MET_pt() * sin(nt.MET_phi()), nt.MET_covXX(), nt.MET_covXY(), nt.MET_covYY(), (Category == 3 ? nt.Tau_decayMode()[decay_1_index] : -1), nt.Tau_decayMode()[decay_2_index], Category, 3, lep1_pt, lep1_eta, lep1_phi, lep1_mass, lep2_pt, lep2_eta, lep2_phi, lep2_mass);
+            }
+            branches["m_tautau_SVFit"] = m_tautau_SVFit;
             //write out branches
             if(not flag)
             {

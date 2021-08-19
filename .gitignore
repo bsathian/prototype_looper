@@ -4,3 +4,10 @@ looper.exe
 .ipynb_checkpoints/
 
 sync_*.txt
+*~
+#vim files
+*.swp
+TauAnalysis/ClassicSVfit/obj/
+TauAnalysis/ClassicSVfit/dep/
+TauAnalysis/ClassicSVfit/lib/
+TauAnalysis/ClassicSVfit/exec/
