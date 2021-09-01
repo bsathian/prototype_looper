@@ -26,22 +26,26 @@ std::unordered_map<int, float> lumi;
 int year;
 std::unordered_map<std::string, bool> is_resonant;
 std::unordered_map<std::string, float> process_ids;
-std::unordered_map<std::string, float> deepcsv_thresholds_2016;
-std::unordered_map<std::string, float> deepcsv_thresholds_2017;
-std::unordered_map<std::string, float> deepcsv_thresholds_2018;
 
 TFile* outFile;
 TTree* output_tree;
 TDirectory* rootdir;
 
-float deltaR(float eta1, float phi1, float eta2, float phi2)
+float phi_mpi_pi(float x)
 {
-    return sqrt((eta1 - eta2) * (eta1 - eta2) + (phi1 - phi2) * (phi1 - phi2));
-}
+    if (isnan(x))
+    {
+        std::cout<<"phi_mpi_pi() function called with NaN"<<std::endl;
+        return x;
+    }
 
-float deltaR(LorentzVector& v1, LorentzVector& v2)
-{
-    return sqrt((v1.eta() - v2.eta()) * (v1.eta() - v2.eta()) + (v1.phi() - v2.phi()) *(v1.phi() - v2.phi()));
+    while (x >= M_PI)
+        x -= 2. * M_PI;
+
+    while (x < -M_PI)
+        x += 2. * M_PI;
+
+    return x;
 }
 
 
@@ -248,7 +252,7 @@ bool passJetPreselections(unsigned int iJet, std::vector<bool> goodElectrons, st
     for(size_t iEl = 0; iEl < nt.Electron_pt().size(); iEl++)
     {
         if(not goodElectrons[iEl]) continue;
-        if(deltaR(nt.Electron_eta()[iEl], nt.Electron_phi()[iEl], nt.Jet_eta()[iJet], nt.Jet_phi()[iJet]) < 0.4)
+        if(ROOT::Math::VectorUtil::DeltaR(nt.Electron_p4()[iEl], nt.Jet_p4()[iJet]) < 0.4)
         {
             dR_electrons = false;
             break;
@@ -259,7 +263,7 @@ bool passJetPreselections(unsigned int iJet, std::vector<bool> goodElectrons, st
     {
         if(not goodMuons[iMu]) continue;
 
-        if(deltaR(nt.Muon_eta()[iMu], nt.Muon_phi()[iMu], nt.Jet_eta()[iJet], nt.Jet_phi()[iJet]) < 0.4)
+        if(ROOT::Math::VectorUtil::DeltaR(nt.Muon_p4()[iMu], nt.Jet_p4()[iJet]) < 0.4)
         {
             dR_muons = false;
             break;
@@ -269,7 +273,7 @@ bool passJetPreselections(unsigned int iJet, std::vector<bool> goodElectrons, st
     for(size_t iTau = 0; iTau < nt.Tau_pt().size(); iTau++)
     {
         if(not goodTaus[iTau]) continue;
-        if(deltaR(nt.Tau_eta()[iTau], nt.Tau_phi()[iTau], nt.Jet_eta()[iJet], nt.Jet_phi()[iJet]) < 0.4)
+        if(ROOT::Math::VectorUtil::DeltaR(nt.Tau_p4()[iTau], nt.Jet_p4()[iJet]) < 0.4)
         {
             dR_taus = false;
             break;
@@ -278,7 +282,7 @@ bool passJetPreselections(unsigned int iJet, std::vector<bool> goodElectrons, st
 
     for(size_t iPho = 0; iPho < nt.Photon_pt().size(); iPho++)
     {
-        if(deltaR(nt.Photon_eta()[iPho], nt.Photon_phi()[iPho], nt.Jet_eta()[iJet], nt.Jet_phi()[iJet]) < 0.4)
+        if(ROOT::Math::VectorUtil::DeltaR(nt.Photon_p4()[iPho], nt.Jet_p4()[iJet]) < 0.4)
         {
             dR_photons= false;
             break;
@@ -295,6 +299,14 @@ bool passJetPreselections(unsigned int iJet, std::vector<bool> goodElectrons, st
     
     return pt_cut and eta_cut and dR_electrons and dR_muons and dR_taus and dR_photons and id_cut;
 }
+
+bool passBTagSelections(unsigned int iJet)
+{
+    float deepCSV_thresholds[] = {0.3093, 0.3033, 0.2770};
+    
+    return nt.Jet_btagDeepFlavB()[iJet] > deepCSV_thresholds[year - 2016];
+}
+
 
 float computeWeight(std::string current_sample, float scale1fb)
 {
@@ -370,13 +382,21 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             branches["g2_idmva"] = nt.selectedPhoton_mvaID()[1];
             branches["g2_pixVeto"] = nt.selectedPhoton_pixelSeed()[1];
 
-            branches["nJet"] = nt.nJet();
-            branches["MET_pt"] = nt.MET_pt();
-            branches["MET_phi"] = nt.MET_phi();
             branches["gg_eta"] = nt.gg_eta();
             branches["gg_pt"] = nt.gg_pt();
             branches["gg_phi"] = nt.gg_phi();
-            branches["gg_dR"] = deltaR(nt.selectedPhoton_eta()[0], nt.selectedPhoton_phi()[0], nt.selectedPhoton_eta()[1], nt.selectedPhoton_phi()[1]);
+            branches["gg_dR"] = ROOT::Math::VectorUtil::DeltaR(nt.selectedPhoton_p4()[0], nt.selectedPhoton_p4()[1]);
+            branches["gg_dPhi"] = phi_mpi_pi(nt.selectedPhoton_phi()[0] - nt.selectedPhoton_phi()[1]);
+
+
+            branches["n_jets"] = nt.nJet();
+            branches["n_bjets"] = 0; //default value
+            branches["MET_pt"] = nt.MET_pt();
+            branches["MET_phi"] = nt.MET_phi();
+
+            LorentzVector diPhoton = nt.selectedPhoton_p4()[0] + nt.selectedPhoton_p4()[1];
+            branches["MET_gg_dphi"] =  phi_mpi_pi(diPhoton.Phi() - nt.MET_phi());
+
 
             //lepton and jet branches - default values
             branches["jet1_pt"] = -999;
@@ -827,6 +847,11 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     {
                         jet2 = iJet;
                     }
+
+                    if(passBTagSelections(iJet))
+                    {
+                        branches["n_bjets"]++;
+                    }
                 }
             }
 
@@ -855,6 +880,9 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             branches["lep2_id_vs_m"] = lep2_id_vs_m;
             branches["lep2_id_vs_j"] = lep2_id_vs_j;
 
+
+
+
             if(jet1 >= 0)
             {
                 branches["jet1_pt"] = nt.Jet_pt()[jet1];
@@ -871,7 +899,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             }
             branches["Category"] = Category;
 
-            if(Category >= 0)
+            if(Category < 8)
             {
                 LorentzVector decay1(lep1_pt, lep1_eta, lep1_phi, lep1_mass);
                 LorentzVector decay2(lep2_pt, lep2_eta, lep2_phi, lep2_mass);
@@ -880,6 +908,12 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 branches["pt_tautau_vis"] = (decay1 + decay2).Pt();
                 branches["eta_tautau_vis"] = (decay1 + decay2).Eta();
                 branches["phi_tautau_vis"] = (decay1 + decay2).Phi();
+
+                branches["MET_dil_dphi"] = phi_mpi_pi(visibleParent.Phi()- nt.MET_phi());
+                branches["lep12_dphi"] = phi_mpi_pi(decay1.Phi() - decay2.Phi());
+                branches["lep12_deta"] = decay1.Eta() - decay2.Eta();
+                branches["lep12_dR"] = ROOT::Math::VectorUtil::DeltaR(decay1, decay2);
+
             }
             else
             {
@@ -887,6 +921,11 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 branches["pt_tautau_vis"] = -999;
                 branches["eta_tautau_vis"] = -999;
                 branches["phi_tautau_vis"] = -999;
+
+                branches["MET_dil_dphi"] = -999;
+                branches["lep12_dphi"] = -999;
+                branches["lep12_deta"] = -999;
+                branches["lep12_dR"] = -999;
             }
 
             //SVFit!!
