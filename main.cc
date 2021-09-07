@@ -49,6 +49,30 @@ float phi_mpi_pi(float x)
 }
 
 
+float helicity(LorentzVector p1, LorentzVector p2)
+{
+    LorentzVector parent = (p1 + p2);
+    LorentzVector particle1 = p1; //copy constructor
+
+    //vector that boosts parent to CM frame
+    auto parentBeta = parent.BoostToCM();
+
+    //boost object for this vector (transformation matrix)
+    ROOT::Math::Boost parentBoost(parentBeta);
+
+    //applying boost
+    LorentzVector particle1InParentFrame = parentBoost(particle1);
+
+    auto v1 = particle1InParentFrame.Vect(); //3 vector of the momentum in parent frame
+    auto vParent = parent.Vect(); //3 vector of the parent momentum in lab frame
+
+    //compute the dot
+    double cosTheta = (v1.Dot(vParent))/(sqrt(v1.Mag2() * vParent.Mag2()));
+
+    return abs(cosTheta);
+}
+
+
 bool passDiPhotonPreselections(std::string current_sample)
 {
     bool mgg_mask;
@@ -387,6 +411,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             branches["gg_phi"] = nt.gg_phi();
             branches["gg_dR"] = ROOT::Math::VectorUtil::DeltaR(nt.selectedPhoton_p4()[0], nt.selectedPhoton_p4()[1]);
             branches["gg_dPhi"] = phi_mpi_pi(nt.selectedPhoton_phi()[0] - nt.selectedPhoton_phi()[1]);
+            branches["gg_cosTheta_helicity"] = helicity(nt.selectedPhoton_p4()[0], nt.selectedPhoton_p4()[1]);
 
 
             branches["n_jets"] = nt.nJet();
@@ -930,11 +955,63 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
 
             //SVFit!!
             float m_tautau_SVFit = -999;
-            if(Category <= 3)
+            //if(Category <= 3)
+            int tauDecay_mode1(-1), tauDecay_mode2(-1);
+            int category1, category2;
+
+            if(Category == 1)
             {
-                m_tautau_SVFit = SVfit_mass(nt.MET_pt() * cos(nt.MET_phi()), nt.MET_pt() * sin(nt.MET_phi()), nt.MET_covXX(), nt.MET_covXY(), nt.MET_covYY(), (Category == 3 ? nt.Tau_decayMode()[decay_1_index] : -1), nt.Tau_decayMode()[decay_2_index], Category, 3, lep1_pt, lep1_eta, lep1_phi, lep1_mass, lep2_pt, lep2_eta, lep2_phi, lep2_mass);
+                category1 = 1;
+                category2 = 3;
+                tauDecay_mode2 = nt.Tau_decayMode()[decay_2_index];
             }
-            branches["m_tautau_SVFit"] = m_tautau_SVFit;
+
+            else if(Category == 2)
+            {
+                category1 = 2;
+                category2 = 3;
+                tauDecay_mode2 = nt.Tau_decayMode()[decay_2_index];
+            }
+
+            else if(Category == 3)
+            {
+                category1 = 3;
+                category2 = 3;
+                tauDecay_mode1 = nt.Tau_decayMode()[decay_1_index];
+                tauDecay_mode2 = nt.Tau_decayMode()[decay_2_index];
+            }
+            else if(Category == 4)
+            {
+                category1 = 1;
+                category2 = 1;
+            }
+            else if(Category == 5)
+            {
+                category1 = 2;
+                category2 = 2;
+            }
+            else if(Category == 6)
+            {
+                category1 = 1;
+                category2 = 2;
+            }
+
+            if(Category < 7)
+            {
+                std::vector<double> tau_p4 = SVfit_ditau_p4(nt.MET_pt() * cos(nt.MET_phi()), nt.MET_pt() * sin(nt.MET_phi()), nt.MET_covXX(), nt.MET_covXY(), nt.MET_covYY(), tauDecay_mode1, tauDecay_mode2, category1, category2, lep1_pt, lep1_eta, lep1_phi, lep1_mass, lep2_pt, lep2_eta, lep2_phi, lep2_mass);
+                
+                branches["pt_tautau_SVFit"] = tau_p4[0];
+                branches["eta_tautau_SVFit"] = tau_p4[1];
+                branches["phi_tautau_SVFit"] = tau_p4[2];
+                branches["m_tautau_SVFit"] = tau_p4[3];
+            }
+            else
+            {
+                branches["pt_tautau_SVFit"] = -999;
+                branches["eta_tautau_SVFit"] = -999;
+                branches["phi_tautau_SVFit"] = -999;
+                branches["m_tautau_SVFit"] = -999;
+            }
             //write out branches
             if(not flag)
             {

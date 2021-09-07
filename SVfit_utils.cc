@@ -88,10 +88,10 @@ vector<double>  SVfit_ditau_p4(float measuredMETx, float measuredMETy, float cov
 	//diTauSVfit_mass = ttP4.M();
 	
 	vector<double> tt_p4(4,0.);
-	tt_p4[0]	= ttP4.Px();
-	tt_p4[1]	= ttP4.Py();
-	tt_p4[2]	= ttP4.Pz();
-	tt_p4[3]	= ttP4.E();
+	tt_p4[0]	= ttP4.Pt();
+	tt_p4[1]	= ttP4.Eta();
+	tt_p4[2]	= ttP4.Phi();
+	tt_p4[3]	= ttP4.M();
 	return tt_p4;
 }
 
