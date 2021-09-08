@@ -17,7 +17,7 @@
 #include "Nano.cc"
 #include "cxxopts.hpp"
 #include "Math/VectorUtil.h"
-
+#include "TLorentzVector.h"
 //SVfit stuff
 #include "SVfit_utils.cc"
 
@@ -26,7 +26,7 @@ std::unordered_map<int, float> lumi;
 int year;
 std::unordered_map<std::string, bool> is_resonant;
 std::unordered_map<std::string, float> process_ids;
-
+std::vector<std::string> bad_files;
 TFile* outFile;
 TTree* output_tree;
 TDirectory* rootdir;
@@ -71,6 +71,7 @@ float helicity(LorentzVector p1, LorentzVector p2)
 
     return abs(cosTheta);
 }
+
 
 
 bool passDiPhotonPreselections(std::string current_sample)
@@ -271,7 +272,7 @@ bool passJetPreselections(unsigned int iJet, std::vector<bool> goodElectrons, st
     bool dR_electrons = true;
     bool dR_muons = true;
     bool dR_taus = true;
-    bool dR_photons = true;
+    bool dR_photons = false;
 
     for(size_t iEl = 0; iEl < nt.Electron_pt().size(); iEl++)
     {
@@ -303,15 +304,12 @@ bool passJetPreselections(unsigned int iJet, std::vector<bool> goodElectrons, st
             break;
         }
     }
-
-    for(size_t iPho = 0; iPho < nt.Photon_pt().size(); iPho++)
+    auto gHidx = nt.gHidx();
+    if((ROOT::Math::VectorUtil::DeltaR(nt.Jet_p4()[iJet], nt.Photon_p4()[gHidx[0]]) > 0.4) and (ROOT::Math::VectorUtil::DeltaR(nt.Jet_p4()[iJet], nt.Photon_p4()[gHidx[1]]) > 0.4))
     {
-        if(ROOT::Math::VectorUtil::DeltaR(nt.Photon_p4()[iPho], nt.Jet_p4()[iJet]) < 0.4)
-        {
-            dR_photons= false;
-            break;
-        }
+        dR_photons= true;
     }
+
     //ID CUT
     bool nemf_cut = nt.Jet_neEmEF()[iJet] < 0.99;
     bool nh_cut = nt.Jet_neHEF()[iJet] < 0.99;
@@ -362,7 +360,14 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
 
     while ((currentFile = (TFile*)fileIter.Next())) 
     {
+        if(std::find(bad_files.begin(), bad_files.end(), std::string(currentFile->GetTitle())) != bad_files.end())
+        {
+            //woopsie! bad file
+            std::cout<<currentFile->GetTitle()<<" is bad! skipping!"<<std::endl;
+            continue;
+        }
         TFile *file = TFile::Open(currentFile->GetTitle());
+        
         TTree *tree = (TTree*)file->Get("Events");
         TString filename(currentFile->GetTitle());
 
@@ -1055,6 +1060,27 @@ void addToChain(std::unordered_map<std::string, std::vector<std::string>> datase
     }
 }
 
+void readBadFiles(std::string fileName)
+{
+    std::fstream f(fileName.c_str(), std::ios::in);
+    std::string line;
+
+    while(std::getline(f, line))
+    {
+        std::cout<<line<<std::endl;
+        if(line.length() == 0)
+        {
+            continue;
+        }
+        bad_files.push_back(line);
+    }
+    for(auto &it:bad_files)
+    {
+        std::cout<<it<<std::endl;
+    }
+}
+
+
 void readFromTextFile(std::string fileName, std::unordered_map<std::string, std::vector<std::string>>& datasets, std::unordered_map<std::string, float>& scale1fb)
 {
     //read stuff from fileName
@@ -1184,6 +1210,7 @@ int main(int argc, char* argv[])
     {
         readFromTextFile("samples_sync.txt", samples_2016, scale1fb_2016);
     }
+    readBadFiles("bad_files.txt");
 
     for(auto &jt:samples_2016)
     {
