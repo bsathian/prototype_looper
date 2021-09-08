@@ -419,7 +419,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             branches["gg_cosTheta_helicity"] = helicity(nt.selectedPhoton_p4()[0], nt.selectedPhoton_p4()[1]);
 
 
-            branches["n_jets"] = nt.nJet();
+            branches["n_jets"] = 0; //default value
             branches["n_bjets"] = 0; //default value
             branches["MET_pt"] = nt.MET_pt();
             branches["MET_phi"] = nt.MET_phi();
@@ -862,13 +862,13 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             }
 
             //jets
-            int nJet = 0;
             int jet1(-1), jet2(-1);
             for(size_t iJet = 0; iJet < nt.Jet_pt().size(); iJet++)
             {
                 //FIXME:Overlap removed with all good leptons!!!!!!!
                 if(passJetPreselections(iJet, goodElectrons, goodMuons, goodTaus))
                 {
+                    branches["n_jets"]++;
                     if(jet1 < 0)
                     {
                         jet1 = iJet;
@@ -1073,10 +1073,6 @@ void readBadFiles(std::string fileName)
             continue;
         }
         bad_files.push_back(line);
-    }
-    for(auto &it:bad_files)
-    {
-        std::cout<<it<<std::endl;
     }
 }
 
