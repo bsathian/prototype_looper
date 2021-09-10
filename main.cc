@@ -68,11 +68,30 @@ float helicity(LorentzVector p1, LorentzVector p2)
 
     //compute the dot
     double cosTheta = (v1.Dot(vParent))/(sqrt(v1.Mag2() * vParent.Mag2()));
-
-    return abs(cosTheta);
+    return cosTheta;
 }
 
+float helicity_flashgg(LorentzVector p1, LorentzVector p2)
+{
+    LorentzVector parent = (p1 + p2);
+    LorentzVector particle1 = p1; //copy constructor
 
+    //vector that boosts parent to CM frame
+    auto parentBeta = parent.BoostToCM();
+
+    //boost object for this vector (transformation matrix)
+    ROOT::Math::Boost parentBoost(parentBeta);
+
+    //applying boost
+    LorentzVector particle1InParentFrame = parentBoost(particle1);
+
+    auto v1 = particle1InParentFrame.Vect(); //3 vector of the momentum in parent frame
+    auto vParent = parent.Vect(); //3 vector of the parent momentum in lab frame
+
+    //compute the dot
+    double cosTheta = cos(v1.Theta());
+    return cosTheta;
+}
 
 bool passDiPhotonPreselections(std::string current_sample)
 {
@@ -417,7 +436,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             branches["gg_dR"] = ROOT::Math::VectorUtil::DeltaR(nt.selectedPhoton_p4()[0], nt.selectedPhoton_p4()[1]);
             branches["gg_dPhi"] = phi_mpi_pi(nt.selectedPhoton_phi()[0] - nt.selectedPhoton_phi()[1]);
             branches["gg_cosTheta_helicity"] = helicity(nt.selectedPhoton_p4()[0], nt.selectedPhoton_p4()[1]);
-
+            branches["gg_cosTheta_helicity_flashgg"] = helicity_flashgg(nt.selectedPhoton_p4()[0], nt.selectedPhoton_p4()[1]);
 
             branches["n_jets"] = 0; //default value
             branches["n_bjets"] = 0; //default value
@@ -852,6 +871,16 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     Category = 8;
                     decay_1_index = iGoodTau;
                     decay_2_index = -1;
+
+                    lep1_pt = nt.Tau_pt()[decay_1_index];
+                    lep1_eta = nt.Tau_eta()[decay_1_index];
+                    lep1_phi = nt.Tau_phi()[decay_1_index];
+                    lep1_mass = nt.Tau_mass()[decay_1_index];
+                    lep1_id_vs_e = nt.Tau_idDeepTau2017v2p1VSe()[decay_1_index];
+                    lep1_id_vs_m = nt.Tau_idDeepTau2017v2p1VSmu()[decay_1_index];
+                    lep1_id_vs_j = nt.Tau_idDeepTau2017v2p1VSjet()[decay_1_index];
+                    lep1_charge = nt.Tau_charge()[decay_1_index];
+                    lep1_pdgID = nt.Tau_charge()[decay_1_index] * 15;
                 }
 
             }
@@ -1067,7 +1096,6 @@ void readBadFiles(std::string fileName)
 
     while(std::getline(f, line))
     {
-        std::cout<<line<<std::endl;
         if(line.length() == 0)
         {
             continue;

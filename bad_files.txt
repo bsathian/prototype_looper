@@ -11,3 +11,4 @@
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/EGamma_Run2018D_private_data18/skimNano-Hggselection__v5/210215_164812/0000//tree_236.root
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/EGamma_Run2018D_private_data18/skimNano-Hggselection__v5/210215_164812/0000//tree_64.root
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/EGamma_Run2018D_private_data18/skimNano-Hggselection__v5/210215_164812/0000//tree_95.root
+/hadoop/cms/store/user/legianni/skimNano-Hggselection/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8_private_mc17/skimNano-Hggselection__v5/210215_223313/0000//tree_135.root
