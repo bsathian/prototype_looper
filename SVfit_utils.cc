@@ -137,24 +137,24 @@ vector<vector<double>> SVfit_all_p4(float measuredMETx, float measuredMETy, floa
 	//diTauSVfit_mass = ttP4.M();
 	
 	vector<double> tt_p4(4,0.);
-	tt_p4[0]	= ttP4.Px();
-	tt_p4[1]	= ttP4.Py();
-	tt_p4[2]	= ttP4.Pz();
-	tt_p4[3]	= ttP4.E();
+	tt_p4[0]	= ttP4.Pt();
+	tt_p4[1]	= ttP4.Eta();
+	tt_p4[2]	= ttP4.Phi();
+	tt_p4[3]	= ttP4.M();
 
 	classic_svFit::LorentzVector tau1P4 = aFastMTTAlgo.getTau1P4();	
 	vector<double> tau1_p4(4,0.);
-	tau1_p4[0]	= tau1P4.Px();
-	tau1_p4[1]	= tau1P4.Py();
-	tau1_p4[2]	= tau1P4.Pz();
-	tau1_p4[3]	= tau1P4.E();
+	tau1_p4[0]	= tau1P4.Pt();
+	tau1_p4[1]	= tau1P4.Eta();
+	tau1_p4[2]	= tau1P4.Phi();
+	tau1_p4[3]	= tau1P4.M();
 
 	classic_svFit::LorentzVector tau2P4 = aFastMTTAlgo.getTau2P4();	
 	vector<double> tau2_p4(4,0.);
-	tau2_p4[0]	= tau2P4.Px();
-	tau2_p4[1]	= tau2P4.Py();
-	tau2_p4[2]	= tau2P4.Pz();
-	tau2_p4[3]	= tau2P4.E();
+	tau2_p4[0]	= tau2P4.Pt();
+	tau2_p4[1]	= tau2P4.Eta();
+	tau2_p4[2]	= tau2P4.Phi();
+	tau2_p4[3]	= tau2P4.M();
 	
 	return  { tt_p4 , tau1_p4 , tau2_p4 } ;
 }

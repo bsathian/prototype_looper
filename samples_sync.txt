@@ -1,12 +1,16 @@
 ds:HH_ggTauTau
 scale1fb:1
+year:2016
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/HHggtautau_Era2016_private_mc16/skimNano-Hggselection__v5/210216_085328/0000/tree_9.root
 ds:Data
 scale1fb:1
+year:2018
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/EGamma_Run2018A_private_data18/skimNano-Hggselection__v5/210215_164425/0000/tree_20.root
 ds:VH
 scale1fb:1
+year:2018
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/VHToGG_M125_13TeV_amcatnloFXFX_madspin_pythia8_private_mc18/skimNano-Hggselection__v5/210215_230611/0000/tree_2.root
 ds:DiPhoton
 scale1fb:1
+year:2017
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/DiPhotonJetsBox_MGG-80toInf_13TeV-Sherpa_private_mc17/skimNano-Hggselection__v5/210215_162239/0000/tree_33.root

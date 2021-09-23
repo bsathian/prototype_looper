@@ -49,6 +49,32 @@ float phi_mpi_pi(float x)
 }
 
 
+float getCosThetaStar_CS_old( LorentzVector gg_p4, LorentzVector tt_p4, float ebeam=6500 )
+{
+    // cos theta star angle in the Collins Soper frame
+    // Copied directly from here: https://github.com/ResonantHbbHgg/Selection/blob/master/selection.h#L3367-L3385
+    TLorentzVector p1, p2;
+    p1.SetPxPyPzE(0, 0,  ebeam, ebeam);
+    p2.SetPxPyPzE(0, 0, -ebeam, ebeam);
+
+    LorentzVector hh_lor = gg_p4 + tt_p4;
+    TLorentzVector hh;
+    hh.SetPxPyPzE(hh_lor.Px(),hh_lor.Py(),hh_lor.Pz(),hh_lor.E()) ;
+
+    TVector3 boost = - hh.BoostVector();
+    p1.Boost(boost);
+    p2.Boost(boost);
+    LorentzVector h1_lor = gg_p4;
+    TLorentzVector h_1;
+    h_1.SetPxPyPzE(h1_lor.Px(),h1_lor.Py(),h1_lor.Pz(),h1_lor.E()) ; 
+    h_1.Boost(boost);
+
+    TVector3 CSaxis = p1.Vect().Unit() - p2.Vect().Unit();
+    CSaxis.Unit();
+    
+    return TMath::Cos(CSaxis.Angle( h_1.Vect().Unit()));
+}
+
 float helicity(LorentzVector p1, LorentzVector p2)
 {
     LorentzVector parent = (p1 + p2);
@@ -407,31 +433,36 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             {
                 continue;
             }
-            
-            float weight = computeWeight(current_sample, scale1fb);
 
+            LorentzVector diPhoton = nt.selectedPhoton_p4()[0] + nt.selectedPhoton_p4()[1];
+            float diPhoton_eta_sign = diPhoton.Eta()/std::abs(diPhoton.Eta());
+
+            float weight = computeWeight(current_sample, scale1fb);
             branches["process_id"] = process_ids[current_sample];
             branches["year"] = year;
             branches["weight"] = weight;
             branches["mgg"] = nt.gg_mass();
 
             branches["g1_ptmgg"] = nt.selectedPhoton_pt()[0] / nt.gg_mass();
-            branches["g2_ptmgg"] = nt.selectedPhoton_pt()[1] / nt.gg_mass();
             branches["g1_pt"] = nt.selectedPhoton_pt()[0];
             branches["g1_eta"] = nt.selectedPhoton_eta()[0];
+            branches["g1_eta_bdt"] = nt.selectedPhoton_eta()[0] * diPhoton_eta_sign;
             branches["g1_phi"] = nt.selectedPhoton_phi()[0];
             branches["g1_idmva"] = nt.selectedPhoton_mvaID()[0];
             branches["g1_pixVeto"] = nt.selectedPhoton_pixelSeed()[0];
 
 
+            branches["g2_ptmgg"] = nt.selectedPhoton_pt()[1] / nt.gg_mass();
             branches["g2_pt"] = nt.selectedPhoton_pt()[1];
             branches["g2_eta"] = nt.selectedPhoton_eta()[1];
-            branches["g2_phi"] = nt.selectedPhoton_phi()[1];
+            branches["g2_eta_bdt"] = nt.selectedPhoton_eta()[1] * diPhoton_eta_sign;
+            branches["g2_phi"] = nt.selectedPhoton_phi()[1] * diPhoton_eta_sign;
             branches["g2_idmva"] = nt.selectedPhoton_mvaID()[1];
             branches["g2_pixVeto"] = nt.selectedPhoton_pixelSeed()[1];
 
-            branches["gg_eta"] = nt.gg_eta();
             branches["gg_pt"] = nt.gg_pt();
+            branches["gg_eta"] = nt.gg_eta();
+            branches["gg_ptmgg"] = nt.gg_pt()/nt.gg_mass();
             branches["gg_phi"] = nt.gg_phi();
             branches["gg_dR"] = ROOT::Math::VectorUtil::DeltaR(nt.selectedPhoton_p4()[0], nt.selectedPhoton_p4()[1]);
             branches["gg_dPhi"] = phi_mpi_pi(nt.selectedPhoton_phi()[0] - nt.selectedPhoton_phi()[1]);
@@ -443,23 +474,21 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             branches["MET_pt"] = nt.MET_pt();
             branches["MET_phi"] = nt.MET_phi();
 
-            LorentzVector diPhoton = nt.selectedPhoton_p4()[0] + nt.selectedPhoton_p4()[1];
             branches["MET_gg_dphi"] =  phi_mpi_pi(diPhoton.Phi() - nt.MET_phi());
 
 
             //lepton and jet branches - default values
             branches["jet1_pt"] = -999;
             branches["jet1_eta"] = -999;
+            branches["jet1_eta_bdt"] = -999;
             branches["jet1_bTag"] = -999;
             branches["jet1_id"] = -999;
+
             branches["jet2_pt"] = -999;
             branches["jet2_eta"] = -999;
+            branches["jet2_eta_bdt"] = -999;
             branches["jet2_bTag"] = -999;
             branches["jet2_id"] = -999;
-            branches["m_tautau_vis"] = -999;
-            branches["pt_tautau_vis"] = -999;
-            branches["eta_tautau_vis"] = -999;
-            branches["phi_tautau_vis"] = -999;
 
             //loop through leptons and do the pre-selections
             std::vector<bool> goodElectrons, goodMuons, goodTaus;
@@ -531,6 +560,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             nGoodIsoTracks = goodIsoTrackIndices.size();
 
             bool ZFlag = false;
+            float mll = -999;
             //FIXME:Checking only good electrons and good muons!
             for(size_t i = 0; i < nGoodElectrons;i++)
             {
@@ -538,7 +568,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 {
                     if(nt.Electron_charge()[goodElectronIndices[i]] * nt.Electron_charge()[goodElectronIndices[j]] < 0)
                     {
-                        float mll = (nt.Electron_p4()[goodElectronIndices[i]] + nt.Electron_p4()[goodElectronIndices[j]]).M();
+                        mll = (nt.Electron_p4()[goodElectronIndices[i]] + nt.Electron_p4()[goodElectronIndices[j]]).M();
                         if(mll > 70 and mll < 110)
                         {
                             ZFlag = true;
@@ -553,7 +583,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 {
                     if(nt.Muon_charge()[goodMuonIndices[i]] * nt.Muon_charge()[goodMuonIndices[j]] < 0)
                     {
-                        float mll = (nt.Muon_p4()[goodMuonIndices[i]] + nt.Muon_p4()[goodMuonIndices[j]]).M();
+                        mll = (nt.Muon_p4()[goodMuonIndices[i]] + nt.Muon_p4()[goodMuonIndices[j]]).M();
                         if(mll >= 70 and mll <= 110)
                         {
                             ZFlag = true;
@@ -919,9 +949,10 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             //generic branches
             branches["lep1_pt"] = lep1_pt;
             branches["lep1_eta"] = lep1_eta;
+            branches["lep1_eta_bdt"] = lep1_eta * diPhoton_eta_sign; 
             branches["lep1_phi"] = lep1_phi;
             branches["lep1_mass"] = lep1_mass;
-            branches["lep1_pdgId"] = lep1_pdgID;
+            branches["lep1_pdgID"] = lep1_pdgID;
             branches["lep1_charge"] = lep1_charge;
             branches["lep1_tightID"] = lep1_tightID;
             branches["lep1_id_vs_e"] = lep1_id_vs_e;
@@ -930,9 +961,10 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             
             branches["lep2_pt"] = lep2_pt;
             branches["lep2_eta"] = lep2_eta;
+            branches["lep2_eta_bdt"] = lep2_eta * diPhoton_eta_sign;
             branches["lep2_phi"] = lep2_phi;
             branches["lep2_mass"] = lep2_mass;
-            branches["lep2_pdgId"] = lep2_pdgID;
+            branches["lep2_pdgID"] = lep2_pdgID;
             branches["lep2_charge"] = lep2_charge;
             branches["lep2_tightID"] = lep2_tightID;
             branches["lep2_id_vs_e"] = lep2_id_vs_e;
@@ -946,6 +978,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             {
                 branches["jet1_pt"] = nt.Jet_pt()[jet1];
                 branches["jet1_eta"] = nt.Jet_eta()[jet1];
+                branches["jet1_eta_bdt"] = nt.Jet_eta()[jet1] * diPhoton_eta_sign;
                 branches["jet1_bTag"] = nt.Jet_btagDeepFlavB()[jet1];
                 branches["jet1_id"] = nt.Jet_jetId()[jet1]; //FIXME
             }
@@ -953,9 +986,11 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             {
                 branches["jet2_pt"] = nt.Jet_pt()[jet2];
                 branches["jet2_eta"] = nt.Jet_eta()[jet2];
+                branches["jet2_eta_bdt"] = nt.Jet_eta()[jet2] * diPhoton_eta_sign;
                 branches["jet2_bTag"] = nt.Jet_btagDeepFlavB()[jet2];
                 branches["jet2_id"] = nt.Jet_jetId()[jet2]; //FIXME
             }
+            branches["Max_bTag"] = *std::max_element(nt.Jet_btagDeepFlavB().begin(), nt.Jet_btagDeepFlavB().end());
             branches["Category"] = Category;
 
             if(Category < 8)
@@ -966,6 +1001,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 branches["m_tautau_vis"] = (decay1 + decay2).M();
                 branches["pt_tautau_vis"] = (decay1 + decay2).Pt();
                 branches["eta_tautau_vis"] = (decay1 + decay2).Eta();
+                branches["eta_bdt_tautau_vis"] = (decay1 + decay2).Eta() * diPhoton_eta_sign;
                 branches["phi_tautau_vis"] = (decay1 + decay2).Phi();
 
                 branches["MET_dil_dphi"] = phi_mpi_pi(visibleParent.Phi()- nt.MET_phi());
@@ -973,19 +1009,26 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 branches["lep12_deta"] = decay1.Eta() - decay2.Eta();
                 branches["lep12_dR"] = ROOT::Math::VectorUtil::DeltaR(decay1, decay2);
 
+                branches["tt_hel_vis"] = helicity_flashgg(decay1, decay2);
+                branches["gg_tt_hel_vis"] = helicity_flashgg(diPhoton, (decay1 + decay2));
             }
             else
             {
                 branches["m_tautau_vis"] = -999;
                 branches["pt_tautau_vis"] = -999;
                 branches["eta_tautau_vis"] = -999;
+                branches["eta_bdt_tautau_vis"] = -999;
                 branches["phi_tautau_vis"] = -999;
 
                 branches["MET_dil_dphi"] = -999;
                 branches["lep12_dphi"] = -999;
                 branches["lep12_deta"] = -999;
                 branches["lep12_dR"] = -999;
+
+                branches["tt_hel_vis"] = -999;
+                branches["gg_tt_hel_vis"] = -999;
             }
+
 
             //SVFit!!
             float m_tautau_SVFit = -999;
@@ -1030,21 +1073,44 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 category2 = 2;
             }
 
+
             if(Category < 7)
             {
-                std::vector<double> tau_p4 = SVfit_ditau_p4(nt.MET_pt() * cos(nt.MET_phi()), nt.MET_pt() * sin(nt.MET_phi()), nt.MET_covXX(), nt.MET_covXY(), nt.MET_covYY(), tauDecay_mode1, tauDecay_mode2, category1, category2, lep1_pt, lep1_eta, lep1_phi, lep1_mass, lep2_pt, lep2_eta, lep2_phi, lep2_mass);
-                
-                branches["pt_tautau_SVFit"] = tau_p4[0];
-                branches["eta_tautau_SVFit"] = tau_p4[1];
-                branches["phi_tautau_SVFit"] = tau_p4[2];
-                branches["m_tautau_SVFit"] = tau_p4[3];
+                std::vector<std::vector<double>> all_p4 = SVfit_all_p4(nt.MET_pt() * cos(nt.MET_phi()), nt.MET_pt() * sin(nt.MET_phi()), nt.MET_covXX(), nt.MET_covXY(), nt.MET_covYY(), tauDecay_mode1, tauDecay_mode2, category1, category2, lep1_pt, lep1_eta, lep1_phi, lep1_mass, lep2_pt, lep2_eta, lep2_phi, lep2_mass);
+  
+                std::vector<double> diTau_vector = all_p4[0];
+                std::vector<double>  tau1_vector = all_p4[1];
+                std::vector<double> tau2_vector = all_p4[2];
+
+                branches["pt_tautau_SVFit"] = diTau_vector[0];
+                branches["eta_tautau_SVFit"] = diTau_vector[1];
+                branches["eta_bdt_tautau_SVFit"] = diTau_vector[1] * diPhoton_eta_sign; 
+                branches["phi_tautau_SVFit"] = diTau_vector[2];
+                branches["m_tautau_SVFit"] = diTau_vector[3];
+
+                LorentzVector diTaup4(diTau_vector[0], diTau_vector[1], diTau_vector[2], diTau_vector[3]);
+                LorentzVector tau1p4(tau1_vector[0], tau1_vector[1], tau1_vector[2], tau1_vector[3]);
+                LorentzVector tau2p4(tau2_vector[0], tau2_vector[1], tau2_vector[2], tau2_vector[3]);
+
+                branches["gg_tt_CS"] = getCosThetaStar_CS_old(nt.selectedPhoton_p4()[0] + nt.selectedPhoton_p4()[1], diTaup4);
+                branches["tt_hel"] = helicity_flashgg(tau1p4, tau2p4);
+                branches["gg_tt_hel"] = helicity_flashgg(diPhoton, diTaup4);
+                branches["dR_tautau_SVFit"] = ROOT::Math::VectorUtil::DeltaR(tau1p4, tau2p4);
+                branches["dR_ggtautau_SVFit"] = ROOT::Math::VectorUtil::DeltaR(diPhoton, diTaup4);
             }
             else
             {
                 branches["pt_tautau_SVFit"] = -999;
                 branches["eta_tautau_SVFit"] = -999;
+                branches["eta_bdt_tautau_SVFit"] = -999;
                 branches["phi_tautau_SVFit"] = -999;
                 branches["m_tautau_SVFit"] = -999;
+
+                branches["gg_tt_CS"] = -999;
+                branches["tt_hel"] = -999;
+                branches["gg_tt_hel"] = -999;
+                branches["dR_tautau_SVFit"] = -999;
+                branches["dR_ggtautau_SVFit"] = -999;
             }
             //write out branches
             if(not flag)
@@ -1105,7 +1171,7 @@ void readBadFiles(std::string fileName)
 }
 
 
-void readFromTextFile(std::string fileName, std::unordered_map<std::string, std::vector<std::string>>& datasets, std::unordered_map<std::string, float>& scale1fb)
+void readFromTextFile(std::string fileName, std::unordered_map<std::string, std::vector<std::string>>& datasets, std::unordered_map<std::string, float>& scale1fb, bool sync=false, std::unordered_map<std::string, int>* yearsForSync=nullptr)
 {
     //read stuff from fileName
     std::fstream f(fileName.c_str(), std::ios::in);
@@ -1129,6 +1195,10 @@ void readFromTextFile(std::string fileName, std::unordered_map<std::string, std:
         else if(line.find("scale1fb") == 0)
         {
             scale1fb[currentDS] = stof(line.substr(9, std::string::npos));
+        }
+        else if(line.find("year") == 0 and sync) //bullshit over-engineering
+        {
+            (*yearsForSync)[currentDS] = stof(line.substr(5,std::string::npos));
         }
         else
         {
@@ -1179,6 +1249,11 @@ int main(int argc, char* argv[])
     is_resonant["GJets_HT-40To100"] = false;
     is_resonant["GJets_HT-600ToInf"] = false;
     is_resonant["HH_ggTauTau"] = true;
+    is_resonant["HH_ggZZ"] = true;
+    is_resonant["HH_ggZZ_4l"] = true;
+    is_resonant["HH_ggZZ_2l2q"] = true;
+    is_resonant["HH_ggWW_dileptonic"] = true;
+    is_resonant["HH_ggWW_semileptonic"] = true;
     is_resonant["TTGG"] = false;
     is_resonant["TTGamma"] = false;
     is_resonant["TTBar"] = false;
@@ -1192,6 +1267,8 @@ int main(int argc, char* argv[])
     process_ids["Data"] = 0;
     process_ids["HH_ggTauTau"] = -1;
     process_ids["HH_ggZZ"] = -2;
+    process_ids["HH_ggZZ_4l"] = -5;
+    process_ids["HH_ggZZ_2l2q"] = -6;
     process_ids["HH_ggWW_dileptonic"] = -3;
     process_ids["HH_ggWW_semileptonic"] = -4;
     process_ids["DiPhoton"] = 3;
@@ -1221,6 +1298,8 @@ int main(int argc, char* argv[])
     std::unordered_map<std::string, float> scale1fb_2017;
     std::unordered_map<std::string, float> scale1fb_2018;
 
+    std::unordered_map<std::string, int> yearsForSync;
+
     outFile->cd();
     output_tree = new TTree("t", "A Baby Ntuple");
 
@@ -1232,13 +1311,14 @@ int main(int argc, char* argv[])
     }
     else
     {
-        readFromTextFile("samples_sync.txt", samples_2016, scale1fb_2016);
+
+        readFromTextFile("samples_sync.txt", samples_2016, scale1fb_2016, true, &yearsForSync);
     }
     readBadFiles("bad_files.txt");
 
     for(auto &jt:samples_2016)
     {
-        std::cout<<jt.first<<std::endl;
+        std::cout<<jt.first<<" "<<process_ids[jt.first]<<std::endl;
     }
     for(auto& jt:samples_2016)
     {
@@ -1265,7 +1345,14 @@ int main(int argc, char* argv[])
         }
 
         std::cout<<"sample name = "<<sample<<std::endl;
-        loopTChain(ch_2016, 2016, scale1fb_2016[sample], sample, sync);
+        if(sync)
+        {
+            loopTChain(ch_2016, yearsForSync[sample], scale1fb_2016[sample], sample, sync);
+        }
+        else
+        {
+            loopTChain(ch_2016, 2016, scale1fb_2016[sample], sample, sync);
+        }
         delete ch_2016;
         if(not sync)
         {
