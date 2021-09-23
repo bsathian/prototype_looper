@@ -6,10 +6,16 @@ import awkward as ak
 from yahist import Hist1D
 from yahist.utils import plot_stack
 import mplhep as hep
+import sys
+from tqdm import tqdm
+import os
+
 plt.style.use([hep.style.CMS, hep.style.firamath])
 
-t = uproot.open("../output.root")["t"]
-df = t.arrays(library = "pd")
+t = uproot.open(sys.argv[1])["t"]
+print("Reading DF")
+master_df = t.arrays(library = "pd")
+print("DF read!")
 
 process_ids = {}
 process_ids["Data"] = 0
@@ -81,10 +87,10 @@ def compute_nonresonant_processes(quantity, category_data):
         if process in colors:
             hists[process] = Hist1D(toFill.values, bins=category_data["binning"], label=process, weights=weight, color=colors[process])
         else:
-            hists[process] = Hist1D(toFill.values, bins=mgg_binning, label=process, weights=weight)
+            hists[process] = Hist1D(toFill.values, bins=category_data["binning"], label=process, weights=weight)
 
     hists["TTbar"] += hists["TTGamma"] + hists["TTGG"]
-    background_stack = [hist for process, hist in hists.items() if "HH_gg" not in process and process != "Data"]
+    background_stack = [hist for process, hist in hists.items() if "HH_gg" not in process and process != "Data" and "TTG" not in process]
     background_stack = sorted(background_stack, key=lambda x: x.integral)
 
     # signal stuff
@@ -109,7 +115,7 @@ def compute_resonant_processes(quantity, category_data):
         if process in colors:
             hists[process] = Hist1D(toFill.values, bins=category_data["binning"], label=process, weights=weight, color=colors[process])
         else:
-            hists[process] = Hist1D(toFill.values, bins=mgg_binning, label=process, weights=weight)
+            hists[process] = Hist1D(toFill.values, bins=category_data["binning"], label=process, weights=weight)
 
     background_stack = [hist for process, hist in hists.items() if "HH_gg" not in process and process != "Data"]
     background_stack = sorted(background_stack, key=lambda x: x.integral)
@@ -138,45 +144,122 @@ def plot_processes_category_split(quantity, data):
         plot_stack(nonres_stack, ax=ax, histtype="stepfilled")
 
         for process, signal_hist in nonres_signal_hists.items():
-            signal_hists.plot(color=colors[process], label=process)
+            signal_hist.plot(color=colors[process], label=process)
+        if Category > 0:
+            plt.title(category_data["title"] + " Non-resonant backgrounds Category {}".format(Category))
+        else:
+            plt.title(category_data["title"] + " Non-resonant backgrounds")
 
-        plt.title(data["title"] + " Non-resonant backgrounds")
-        ax.set_yscale("log")
+        if "yscale" in category_data and category_data["yscale"] == "log":
+            ax.set_yscale("log")
+        if "xlabel" in category_data:
+            plt.xlabel(category_data["xlabel"])
+        else:
+            plt.xlabel(category_data["title"])
+
         ax.legend(fontsize=10)
         if Category > 0:
-            plt.savefig("{}_cat_{}_nonresonant.pdf".format(quantity, Category))
+            os.system("mkdir -p cat_{}".format(Category))
+            plt.savefig("cat_{}/{}_cat_{}_nonresonant.pdf".format(Category, quantity, Category))
         else:
-            plt.savefig("{}_overall_nonresonant.pdf".format(quantity))
+            os.system("mkdir -p overall")
+            plt.savefig("overall/{}_overall_nonresonant.pdf".format(quantity))
+        plt.close()
 
         res_stack, res_signal_hists = compute_resonant_processes(quantity, category_data)
         fig, ax = plt.subplots()
         plot_stack(res_stack, ax=ax, histtype="stepfilled")
 
         for process, signal_hist in res_signal_hists.items():
-            signal_hists.plot(color=colors[process], label=process)
-
-        plt.title(data["title"] + " Resonant backgrounds")
+            signal_hist.plot(color=colors[process], label=process)
+        if Category > 0:
+            plt.title(category_data["title"] + " Resonant backgrounds Category {}".format(Category))
+        else:
+            plt.title(data["title"] + " Resonant backgrounds")
         ax.set_yscale("log")
         ax.legend(fontsize=10)
-        if Category > 0:
-            plt.savefig("{}_cat_{}_resonant.pdf".format(quantity, Category))
+
+        if "yscale" in category_data and category_data["yscale"] == "log":
+            ax.set_yscale("log")
+        if "xlabel" in category_data:
+            plt.xlabel(category_data["xlabel"])
         else:
-            plt.savefig("{}_overall_resonant.pdf".format(quantity))
+            plt.xlabel(category_data["title"])
+
+        if Category > 0:
+            plt.savefig("cat_{}/{}_cat_{}_resonant.pdf".format(Category, quantity, Category))
+        else:
+            plt.savefig("overall/{}_overall_resonant.pdf".format(quantity))
+        plt.close()
 
         overall_stack = res_stack + nonres_stack
         overall_stack = sorted(overall_stack, key=lambda x: x.integral)
         fig, ax = plt.subplots()
         plot_stack(overall_stack, ax=ax, histtype="stepfilled")
-        plt.title(data["title"] + "all backgrounds")
+        for process,signal_hist in res_signal_hists.items():
+            signal_hist.plot(color=colors[process], label=process)
+
+        if Category > 0:
+            plt.title(category_data["title"] + " all backgrounds Category {}".format(Category))
+        else:
+            plt.title(data["title"] + " all backgrounds")
         ax.set_yscale("log")
         ax.legend(fontsize=10)
-        if Category > 0:
-            plt.savefig("{}_cat_{}_all.pdf".format(quantity, Category))
+
+        if "yscale" in category_data and category_data["yscale"] == "log":
+            ax.set_yscale("log")
+        if "xlabel" in category_data:
+            plt.xlabel(category_data["xlabel"])
         else:
-            plt.savefig("{}_overall_all.pdf".format(quantity))
+            plt.xlabel(category_data["title"])
+
+        if Category > 0:
+            plt.savefig("cat_{}/{}_cat_{}_all.pdf".format(Category, quantity, Category))
+        else:
+            plt.savefig("overall/{}_overall_all.pdf".format(quantity))
+        plt.close()
 
 
 # dictionary
 plotter_data = {}
-plotter_data["mgg"] = {"binning": "40,100,180", "toFill": df, "title": "Di-Photon Mass", "yscale": "log"}
-plot_processes_category_split("mgg", plotter_data["mgg"])
+plotter_data["mgg"] = {"binning": "40,100,180", "toFill": master_df, "title": "Di-Photon Mass", "yscale": "log", "xlabel":"Di-Photon mass [GeV]"}
+plotter_data["g1_ptmgg"] = {"binning": "50,0,10", "toFill": master_df, "title": "Leading photon pt/mgg", "yscale": "log", "xlabel":"Leading photon pt/mgg"}
+plotter_data["g2_ptmgg"] = {"binning": "30,0,6", "toFill": master_df, "title": "Subleading photon pt/mgg", "yscale": "log", "xlabel":"Subleading photon pt/mgg"}
+plotter_data["g1_pt"] = {"binning":"50,0,500", "toFill": master_df, "title":"Leading photon pt", "yscale":"log", "xlabel":"Leading photon pt [GeV]"}
+plotter_data["g1_eta"] = {"binning":"100,-2.5,2.5", "toFill": master_df, "title":"Leading photon $\eta$", "yscale":"log"}
+plotter_data["g1_phi"] = {"binning":"100,-3.15,3.15", "toFill": master_df, "title":"Leading photon $\phi$", "yscale":"log"}
+plotter_data["g2_pt"] = {"binning":"50,0,500", "toFill": master_df, "title":"Subleading photon pt", "yscale":"log", "xlabel":"Subleading photon pt [GeV]"}
+plotter_data["g2_eta"] = {"binning":"100,-2.5,2.5", "toFill": master_df, "title":"Subleading photon $\eta$", "yscale":"log"}
+plotter_data["g2_phi"] = {"binning":"100,-3.15,3.15", "toFill": master_df, "title":"Subleading photon $\phi$", "yscale":"log"}
+plotter_data["n_bjets"] = {"binning":"10,0,10", "toFill": master_df, "title":"B-jet multiplicity", "yscale":"log"}
+plotter_data["n_jets"] = {"binning":"10,0,10", "toFill": master_df, "title":"Jet multiplicity", "yscale":"log"}
+
+plotter_data["MET_pt"] = {"binning":"50,0,500", "toFill": master_df, "title":"MET pt", "yscale":"log", "xlabel": "MET pt [GeV]"}
+plotter_data["MET_phi"] = {"binning":"50,-3.15,3.15", "toFill": master_df, "title":"MET $\phi$", "yscale":"log", "xlabel": "MET $\phi$"}
+plotter_data["gg_dR"] = {"binning":"50,0,10", "toFill": master_df, "title": "DiPhoton $\Delta$R", "yscale": "log"}
+
+plotter_data["lep1_pt"] = {"binning": "25,0,100", "toFill": master_df, "title": "Leading Lepton Pt", "yscale": "log", "xlabel": "Leading Lepton Pt [GeV]"}
+plotter_data["lep1_eta"] = {"binning": "100,-2.5,2.5", "toFill": master_df, "title": "Leading Lepton $\eta$", "yscale": "log", "xlabel": "Leading Lepton $\eta$"}
+plotter_data["lep1_phi"] = {"binning": "100,-3.15,3.15", "toFill": master_df, "title": "Leading Lepton $\phi$", "yscale": "log", "xlabel": "Leading Lepton $\phi$"}
+
+plotter_data["lep2_pt"] = {"binning": "25,0,100", "toFill": master_df, "title": "Subleading Lepton Pt", "yscale": "log", "xlabel": "Subleading Lepton Pt [GeV]"}
+plotter_data["lep2_eta"] = {"binning": "100,-2.5,2.5", "toFill": master_df, "title": "Subleading Lepton $\eta$", "yscale": "log", "xlabel": "Subleading Lepton $\eta$"}
+plotter_data["lep1_phi"] = {"binning": "100,-3.15,3.15", "toFill": master_df, "title": "Subleading Lepton $\phi$", "yscale": "log", "xlabel": "Subleading Lepton $\phi$"}
+plotter_data["lep12_dR"] = {"binning":"50,0,10", "toFill":master_df, "title":"Dilepton $\DeltaR", "yscale":"log"}
+plotter_data["gg_cosTheta_helicity_flashgg"] = {"binning":"50,-1,1", "toFill": master_df, "title":"Helicity angle", "yscale": "log"}
+plotter_data["gg_tt_CS"] = {"binning":"50,-1,1", "toFill": master_df, "title":"Collins-Soper angle", "yscale": "log"}
+plotter_data["m_tautau_SVFit"] = {"binning": "50,0,300", "toFill": master_df, "title": "Di-tau SVFit mass", "yscale": "log","xlabel":"Di-tau SVFit mass [GeV]"}
+plotter_data["pt_tautau_SVFit"] = {"binning": "50,0,200", "toFill": master_df, "title": "Di-tau SVFit pt", "yscale": "log", "xlabel":"Di-tau SVFit pt [GeV]"}
+plotter_data["eta_tautau_SVFit"] = {"binning": "50,-2.4,2.4", "toFill": master_df, "title": "Di-tau SVFit $\eta$", "yscale": "log"}
+plotter_data["phi_tautau_SVFit"] = {"binning": "50,-3.15,3.15", "toFill": master_df, "title": "Di-tau SVFit $\phi$", "yscale": "log"}
+
+for process, data in tqdm(plotter_data.items()):
+    print("Process = ", process)
+    plot_processes_category_split(process, data)
+
+for Category in list(range(1,8)):
+    os.system("cd cat_{} && sh ~/niceplots/niceplots.sh  && cd -".format(Category))
+os.system("cd overall && sh ~/niceplots/niceplots.sh  && cd -".format(Category))
+
+os.system("chmod -R 755 .")
+

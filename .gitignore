@@ -1,6 +1,12 @@
+__pycache__/
 *.out
 looper.exe
 *.root
+*.hdf5
+*.pkl
+*.xgb
+*.npz
+output/
 .ipynb_checkpoints/
 
 sync_*.txt
@@ -11,3 +17,6 @@ TauAnalysis/ClassicSVfit/obj/
 TauAnalysis/ClassicSVfit/dep/
 TauAnalysis/ClassicSVfit/lib/
 TauAnalysis/ClassicSVfit/exec/
+*.pdf
+*.png
+plots/

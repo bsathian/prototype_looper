@@ -467,7 +467,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             branches["gg_dR"] = ROOT::Math::VectorUtil::DeltaR(nt.selectedPhoton_p4()[0], nt.selectedPhoton_p4()[1]);
             branches["gg_dPhi"] = phi_mpi_pi(nt.selectedPhoton_phi()[0] - nt.selectedPhoton_phi()[1]);
             branches["gg_cosTheta_helicity"] = helicity(nt.selectedPhoton_p4()[0], nt.selectedPhoton_p4()[1]);
-            branches["gg_cosTheta_helicity_flashgg"] = helicity_flashgg(nt.selectedPhoton_p4()[0], nt.selectedPhoton_p4()[1]);
+            branches["gg_cosTheta_helicity_flashgg"] = std::abs(helicity_flashgg(nt.selectedPhoton_p4()[0], nt.selectedPhoton_p4()[1]));
 
             branches["n_jets"] = 0; //default value
             branches["n_bjets"] = 0; //default value
@@ -971,7 +971,8 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             branches["lep2_id_vs_m"] = lep2_id_vs_m;
             branches["lep2_id_vs_j"] = lep2_id_vs_j;
 
-
+            
+            branches["dPhi_MET_tau1"] = phi_mpi_pi(nt.MET_phi() - lep1_phi);
 
 
             if(jet1 >= 0)
@@ -1009,8 +1010,8 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 branches["lep12_deta"] = decay1.Eta() - decay2.Eta();
                 branches["lep12_dR"] = ROOT::Math::VectorUtil::DeltaR(decay1, decay2);
 
-                branches["tt_hel_vis"] = helicity_flashgg(decay1, decay2);
-                branches["gg_tt_hel_vis"] = helicity_flashgg(diPhoton, (decay1 + decay2));
+                branches["tt_hel_vis"] = std::abs(helicity_flashgg(decay1, decay2));
+                branches["gg_tt_hel_vis"] = std::abs(helicity_flashgg(diPhoton, (decay1 + decay2)));
             }
             else
             {
@@ -1092,9 +1093,9 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 LorentzVector tau1p4(tau1_vector[0], tau1_vector[1], tau1_vector[2], tau1_vector[3]);
                 LorentzVector tau2p4(tau2_vector[0], tau2_vector[1], tau2_vector[2], tau2_vector[3]);
 
-                branches["gg_tt_CS"] = getCosThetaStar_CS_old(nt.selectedPhoton_p4()[0] + nt.selectedPhoton_p4()[1], diTaup4);
-                branches["tt_hel"] = helicity_flashgg(tau1p4, tau2p4);
-                branches["gg_tt_hel"] = helicity_flashgg(diPhoton, diTaup4);
+                branches["gg_tt_CS"] = std::abs(getCosThetaStar_CS_old(nt.selectedPhoton_p4()[0] + nt.selectedPhoton_p4()[1], diTaup4));
+                branches["tt_hel"] = std::abs(helicity_flashgg(tau1p4, tau2p4));
+                branches["gg_tt_hel"] = std::abs(helicity_flashgg(diPhoton, diTaup4));
                 branches["dR_tautau_SVFit"] = ROOT::Math::VectorUtil::DeltaR(tau1p4, tau2p4);
                 branches["dR_ggtautau_SVFit"] = ROOT::Math::VectorUtil::DeltaR(diPhoton, diTaup4);
             }
