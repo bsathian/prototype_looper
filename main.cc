@@ -442,7 +442,6 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             branches["year"] = year;
             branches["weight"] = weight;
             branches["mgg"] = nt.gg_mass();
-
             branches["g1_ptmgg"] = nt.selectedPhoton_pt()[0] / nt.gg_mass();
             branches["g1_pt"] = nt.selectedPhoton_pt()[0];
             branches["g1_eta"] = nt.selectedPhoton_eta()[0];
@@ -489,7 +488,10 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             branches["jet2_eta_bdt"] = -999;
             branches["jet2_bTag"] = -999;
             branches["jet2_id"] = -999;
-
+            branches["n_electrons"] = 0;
+            branches["n_muons"] = 0;
+            branches["n_taus"] = 0;
+            branches["n_isoTrk"] = 0;
             //loop through leptons and do the pre-selections
             std::vector<bool> goodElectrons, goodMuons, goodTaus;
             std::vector<size_t> goodMuonIndices, goodElectronIndices, goodTauIndices;
@@ -497,6 +499,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             {
                 if(passElectronPreselections(iEl))
                 {
+                    branches["n_electrons"]++;
                     goodElectrons.push_back(true);
                     goodElectronIndices.push_back(iEl);
                 }
@@ -512,6 +515,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 {
                     goodMuons.push_back(true);
                     goodMuonIndices.push_back(iMu);
+                    branches["n_muons"]++;
                 }
                 else
                 {
@@ -524,6 +528,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 {
                     goodTaus.push_back(true);
                     goodTauIndices.push_back(iTau);
+                    branches["n_taus"]++;
                 }
                 else
                 {
@@ -539,6 +544,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 {
                     goodIsoTracks.push_back(true); 
                     goodIsoTrackIndices.push_back(iTrk);
+                    branches["n_isoTrk"]++;
                 }
                 else
                 {
@@ -551,6 +557,8 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             int lep1_pdgID = -999, lep2_pdgID = -999, lep1_charge = -999, lep2_charge = -999;
             float lep1_pt = -999, lep1_eta = -999, lep1_phi = -999, lep1_tightID = -999, lep1_id_vs_e = -999, lep1_id_vs_m = -999, lep1_id_vs_j = -999, lep1_mass = -999;
             float lep2_pt = -1, lep2_eta = -999, lep2_phi = -999, lep2_tightID = -999, lep2_id_vs_e = -999, lep2_id_vs_m = -999, lep2_id_vs_j = -999, lep2_mass = -999;
+
+            float isoTrack_isolation_all = -999, isoTrack_isolation_charged = -999;
 
             size_t nGoodMuons(0), nGoodElectrons(0), nGoodTaus(0), nGoodIsoTracks;
 
@@ -569,7 +577,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     if(nt.Electron_charge()[goodElectronIndices[i]] * nt.Electron_charge()[goodElectronIndices[j]] < 0)
                     {
                         mll = (nt.Electron_p4()[goodElectronIndices[i]] + nt.Electron_p4()[goodElectronIndices[j]]).M();
-                        if(mll > 70 and mll < 110)
+                        if(mll > 80 and mll < 100)
                         {
                             ZFlag = true;
                         }
@@ -584,7 +592,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     if(nt.Muon_charge()[goodMuonIndices[i]] * nt.Muon_charge()[goodMuonIndices[j]] < 0)
                     {
                         mll = (nt.Muon_p4()[goodMuonIndices[i]] + nt.Muon_p4()[goodMuonIndices[j]]).M();
-                        if(mll >= 70 and mll <= 110)
+                        if(mll > 80 and mll < 100)
                         {
                             ZFlag = true;
                         }
@@ -889,6 +897,10 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                             lep2_mass = 0;
                             lep2_pdgID = nt.IsoTrack_pdgId()[goodIsoTrackIndices[j]];
                             lep2_charge = lep2_pdgID/std::abs(lep2_pdgID);
+
+                            isoTrack_isolation_all = nt.IsoTrack_pfRelIso03_all()[iGoodTrk];
+                            isoTrack_isolation_charged = nt.IsoTrack_pfRelIso03_chg()[iGoodTrk];
+
                         }
                     }
                 }
@@ -921,6 +933,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             }
 
             //jets
+            float max_bTag = -999;
             int jet1(-1), jet2(-1);
             for(size_t iJet = 0; iJet < nt.Jet_pt().size(); iJet++)
             {
@@ -936,6 +949,9 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                     {
                         jet2 = iJet;
                     }
+                    
+
+                    max_bTag = nt.Jet_btagDeepFlavB().at(iJet) > max_bTag ? nt.Jet_btagDeepFlavB().at(iJet) : max_bTag;
 
                     if(passBTagSelections(iJet))
                     {
@@ -971,8 +987,17 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             branches["lep2_id_vs_m"] = lep2_id_vs_m;
             branches["lep2_id_vs_j"] = lep2_id_vs_j;
 
-            
-            branches["dPhi_MET_tau1"] = phi_mpi_pi(nt.MET_phi() - lep1_phi);
+            branches["isoTrack_isolation_all"] = isoTrack_isolation_all;
+            branches["isoTrack_isolation_charged"] = isoTrack_isolation_charged;
+
+            if(lep1_pt > lep2_pt)
+            {
+                branches["dPhi_MET_tau1"] = phi_mpi_pi(nt.MET_phi() - lep1_phi);
+            }
+            else
+            {
+                branches["dPhi_MET_tau1"] = phi_mpi_pi(nt.MET_phi() - lep2_phi);
+            }
 
 
             if(jet1 >= 0)
@@ -991,7 +1016,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 branches["jet2_bTag"] = nt.Jet_btagDeepFlavB()[jet2];
                 branches["jet2_id"] = nt.Jet_jetId()[jet2]; //FIXME
             }
-            branches["Max_bTag"] = *std::max_element(nt.Jet_btagDeepFlavB().begin(), nt.Jet_btagDeepFlavB().end());
+            branches["max_bTag"] = max_bTag;
             branches["Category"] = Category;
 
             if(Category < 8)
@@ -1005,7 +1030,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 branches["eta_bdt_tautau_vis"] = (decay1 + decay2).Eta() * diPhoton_eta_sign;
                 branches["phi_tautau_vis"] = (decay1 + decay2).Phi();
 
-                branches["MET_dil_dphi"] = phi_mpi_pi(visibleParent.Phi()- nt.MET_phi());
+                branches["MET_dil_dphi_vis"] = phi_mpi_pi(visibleParent.Phi()- nt.MET_phi());
                 branches["lep12_dphi"] = phi_mpi_pi(decay1.Phi() - decay2.Phi());
                 branches["lep12_deta"] = decay1.Eta() - decay2.Eta();
                 branches["lep12_dR"] = ROOT::Math::VectorUtil::DeltaR(decay1, decay2);
@@ -1021,7 +1046,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 branches["eta_bdt_tautau_vis"] = -999;
                 branches["phi_tautau_vis"] = -999;
 
-                branches["MET_dil_dphi"] = -999;
+                branches["MET_dil_dphi_vis"] = -999;
                 branches["lep12_dphi"] = -999;
                 branches["lep12_deta"] = -999;
                 branches["lep12_dR"] = -999;
@@ -1075,7 +1100,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             }
 
 
-            if(Category < 7)
+            if(Category < 8)
             {
                 std::vector<std::vector<double>> all_p4 = SVfit_all_p4(nt.MET_pt() * cos(nt.MET_phi()), nt.MET_pt() * sin(nt.MET_phi()), nt.MET_covXX(), nt.MET_covXY(), nt.MET_covYY(), tauDecay_mode1, tauDecay_mode2, category1, category2, lep1_pt, lep1_eta, lep1_phi, lep1_mass, lep2_pt, lep2_eta, lep2_phi, lep2_mass);
   
@@ -1097,7 +1122,11 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 branches["tt_hel"] = std::abs(helicity_flashgg(tau1p4, tau2p4));
                 branches["gg_tt_hel"] = std::abs(helicity_flashgg(diPhoton, diTaup4));
                 branches["dR_tautau_SVFit"] = ROOT::Math::VectorUtil::DeltaR(tau1p4, tau2p4);
+                branches["dPhi_tautau_SVFit"] = phi_mpi_pi(tau1p4.phi() - tau2p4.phi());
                 branches["dR_ggtautau_SVFit"] = ROOT::Math::VectorUtil::DeltaR(diPhoton, diTaup4);
+                branches["dPhi_ggtautau_SVFit"] = phi_mpi_pi(diTaup4.phi() - (nt.selectedPhoton_p4()[0] + nt.selectedPhoton_p4()[1]).phi());
+                branches["MET_dil_dphi"] = phi_mpi_pi(diTaup4.Phi()- nt.MET_phi());
+
             }
             else
             {
@@ -1106,12 +1135,17 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 branches["eta_bdt_tautau_SVFit"] = -999;
                 branches["phi_tautau_SVFit"] = -999;
                 branches["m_tautau_SVFit"] = -999;
+                branches["MET_dil_dphi"] = -999;
+
 
                 branches["gg_tt_CS"] = -999;
                 branches["tt_hel"] = -999;
                 branches["gg_tt_hel"] = -999;
                 branches["dR_tautau_SVFit"] = -999;
                 branches["dR_ggtautau_SVFit"] = -999;
+                branches["dPhi_tautau_SVFit"] = -999;
+                branches["dPhi_ggtautau_SVFit"] = -999;
+
             }
             //write out branches
             if(not flag)
@@ -1333,6 +1367,11 @@ int main(int argc, char* argv[])
             continue;
         }
 
+        //sample boycott
+        if(sample == "HH_ggZZ_2l2q" or sample == "HH_ggZZ_4l")
+        {
+            continue;
+        }
 
         TChain *ch_2016 = new TChain("Events");
         TChain *ch_2017 = new TChain("Events");

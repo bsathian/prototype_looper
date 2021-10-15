@@ -1,6 +1,6 @@
 import argparse
 
-from helpers import zip_helper 
+from helpers import zip_helper
 
 """
 This script takes in an ntuple and one or more mvas and
@@ -39,6 +39,12 @@ parser.add_argument(
     type = int,
     default = 0
 )
+parser.add_argument(
+        "--tree_name",
+        help = "Name of the TTree (default = t)",
+        type = str,
+        default = "t"
+        )
 
 args = parser.parse_args()
 zipper = zip_helper.ZipHelper(**vars(args))

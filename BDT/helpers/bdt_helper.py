@@ -48,6 +48,8 @@ class BDTHelper():
         return self.bdt
 
     def make_dmatrix(self):
+        if self.debug > 0:
+            print("[BDTHelper] Input features = ", self.events["train"]["X"].columns)
         for split in self.events.keys():
             self.events[split]["dmatrix"] = xgboost.DMatrix(
                 self.events[split]["X"],
@@ -58,6 +60,8 @@ class BDTHelper():
         return
 
     def predict_from_df(self, df):
+        if self.debug > 0:
+            print("[BDTHelper] Input features = ", self.config["training_features"])
         X = xgboost.DMatrix(df[self.config["training_features"]])
         return self.bdt.predict(X)
 
@@ -73,6 +77,9 @@ class BDTHelper():
         self.weights_file =  "output/" + self.output_tag + ".xgb"
         self.summary_file = self.weights_file.replace(".xgb", ".json")
         self.bdt.save_model(self.weights_file)
+        # hack to include Category_onehot variables
+        if "Category_onehot_1" not in self.config["training_features"]:
+            self.config["training_features"] += [i for i in self.events["train"]["X"].columns if "Category_onehot" in i]
         summary = {
             "config" : self.config,
             "weights" : self.weights_file

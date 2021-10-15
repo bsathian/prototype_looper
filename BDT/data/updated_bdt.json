@@ -1,0 +1,32 @@
+{
+    "signal" : ["HH_ggTauTau" , "HH_ggWW_semileptonic" , "HH_ggWW_dileptonic"],
+    "background" : ["DiPhoton", "TTGG", "TTGamma", "TTbar", "WGamma", "ZGamma","VH", "ttH", "ggH", "VBFH"],
+    "training_features" : [ "n_taus", "n_electrons", "n_muons", "n_jets", "n_bjets", "n_isoTrks", 
+							"g1_ptmgg", "g1_eta_bdt", "g1_idmva", "g1_pixVeto", "g2_ptmgg", "g2_eta_bdt", "g2_idmva", "g2_pixVeto", 
+							"gg_eta", "gg_ptmgg", "gg_dR", "gg_dPhi", "gg_hel", "gg_tt_CS", "gg_tt_hel", "tt_hel", 
+							"MET_pt", "MET_gg_dPhi", "MET_ll_dPhi", 
+                            "lep1_pt", "lep1_eta_bdt", "lep2_pt", "lep2_eta_bdt", "lep12_deta", "lep12_dr", "lep12_dphi",
+                            "jet1_pt", "jet1_eta_bdt", "jet1_bTag", "jet2_pt", "jet2_eta_bdt", "jet2_bTag", "max_bTag",
+                            "pt_tautau_SVFit" , "eta_tautau_SVFit_bdt" , "m_tautau_SVFit" , "dR_tautau_SVFit", "dR_ggtautau_SVFit", "dPhi_tautau_SVFit", "dPhi_ggtautau_SVFit", "dPhi_MET_l", 
+							"pt_tautau_vis" , "eta_tautau_vis_bdt" , "m_tautau_vis" 
+                            ],
+
+    "branches" : ["weight", "process_id", "mgg"],
+    "preprocess" : {
+        "scale_signal" : true,
+        "scale_resonant" : 1
+    },
+    "mva" : {
+        "type" : "binary_classification_bdt",
+        "param" : {
+            "max_depth": 5,
+            "eta" : 0.2,
+            "objective" : "binary:logistic",
+            "eval_metric":"auc",
+            "nthread" : 12
+        },
+        "n_trees" : 500,
+        "early_stopping" : true,
+        "early_stopping_rounds" : 5
+    }
+} 

@@ -8,7 +8,13 @@
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/EGamma_Run2018A_private_data18/skimNano-Hggselection__v5/210215_164425/0000//tree_298.root
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/EGamma_Run2018A_private_data18/skimNano-Hggselection__v5/210215_164425/0000//tree_71.root
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/EGamma_Run2018B_private_data18/skimNano-Hggselection__v5/210215_164541/0000//tree_23.root
+/hadoop/cms/store/user/legianni/skimNano-Hggselection/EGamma_Run2018C_private_data18/skimNano-Hggselection__v5/210215_164655/0000//tree_138.root
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/EGamma_Run2018D_private_data18/skimNano-Hggselection__v5/210215_164812/0000//tree_236.root
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/EGamma_Run2018D_private_data18/skimNano-Hggselection__v5/210215_164812/0000//tree_64.root
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/EGamma_Run2018D_private_data18/skimNano-Hggselection__v5/210215_164812/0000//tree_95.root
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8_private_mc17/skimNano-Hggselection__v5/210215_223313/0000//tree_135.root
+/hadoop/cms/store/user/legianni/skimNano-Hggselection/HHggZZ_Era2017_private_mc17/skimNano-Hggselection__v5/210217_093552/0000//tree_11.root
+/hadoop/cms/store/user/legianni/skimNano-Hggselection/DoubleEG_Run2016E_private_data16/skimNano-Hggselection__v5/210215_163245/0000//tree_3.root
+/hadoop/cms/store/user/legianni/skimNano-Hggselection/DiPhotonJetsBox_MGG-80toInf_13TeV-Sherpa_private_mc16/skimNano-Hggselection__v5/210215_162355/0000//tree_21.root
+/hadoop/cms/store/user/legianni/skimNano-Hggselection/EGamma_Run2018A_private_data18/skimNano-Hggselection__v5/210215_164425/0000//tree_123.root
+/hadoop/cms/store/user/legianni/skimNano-Hggselection/EGamma_Run2018D_private_data18/skimNano-Hggselection__v5/210215_164812/0000//tree_534.root

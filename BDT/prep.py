@@ -32,6 +32,12 @@ parser.add_argument(
     default = "output/test.hdf5"
 )
 
+parser.add_argument(
+        "--tree_name",
+        help = "Name of the TTree (default = t)",
+        type = str,
+        default = "t"
+        )
 args = parser.parse_args()
 
 prepper = prep_helper.PrepHelper(**vars(args))

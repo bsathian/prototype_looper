@@ -19,7 +19,7 @@ class PrepHelper():
         self.output = kwargs.get("output")
         self.debug = kwargs.get("debug")
         self.config_file = kwargs.get("config")
-
+        self.tree_name = kwargs.get("tree_name", "t")
         if self.debug > 0:
             print("[PrepHelper] Creating PrepHelper instance with options:")
             print("\n".join(["{0}={1!r}".format(a, b) for a, b in kwargs.items()]))
@@ -30,8 +30,11 @@ class PrepHelper():
             self.config = json.load(f_in)
 
 #        self.df = pandas.read_pickle(self.input)
-        t = uproot.open(self.input)["t"]
-        self.df = t.arrays(self.config["training_features"] + self.config["branches"] + ["Category"], library="pd")
+        if ".root" in self.input:
+            t = uproot.open(self.input)[self.tree_name]
+            self.df = t.arrays(self.config["training_features"] + self.config["branches"] + ["Category"], library="pd")
+        else:
+            self.df = pandas.read_pickle(self.input)
         if self.debug > 0:
             print("[PrepHelper] Loaded file %s, containing %d events" % (self.input, len(self.df)))
 
@@ -87,7 +90,7 @@ class PrepHelper():
                 self.df["Category_onehot_{}".format(i)] = np.zeros(len(self.df))
                 self.df.loc[self.df["Category"] == i, "Category_onehot_{}".format(i)] = 1
 
-            self.config["training_features"] + ["Category_{}".format(i) for i in self.df["Category"].unique()]
+            self.config["training_features"] = self.config["training_features"] + ["Category_onehot_{}".format(i) for i in self.df["Category"].astype(int).unique()]
         return
     def prepare_samples(self):
         """

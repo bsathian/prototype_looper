@@ -237,6 +237,9 @@ plotter_data["n_jets"] = {"binning":"10,0,10", "toFill": master_df, "title":"Jet
 plotter_data["MET_pt"] = {"binning":"50,0,500", "toFill": master_df, "title":"MET pt", "yscale":"log", "xlabel": "MET pt [GeV]"}
 plotter_data["MET_phi"] = {"binning":"50,-3.15,3.15", "toFill": master_df, "title":"MET $\phi$", "yscale":"log", "xlabel": "MET $\phi$"}
 plotter_data["gg_dR"] = {"binning":"50,0,10", "toFill": master_df, "title": "DiPhoton $\Delta$R", "yscale": "log"}
+plotter_data["MET_gg_dphi"] = {"binning":"50,-3.15,3.15", "toFill": master_df, "yscale":"log", "title": "$\Delta\phi$ between MET and $\gamma\gamma$"}
+plotter_data["MET_dil_dphi"] = {"binning":"50,-3.15,3.15", "toFill": master_df, "yscale":"log", "title": "$\Delta\phi$ between MET and di-lepton"}
+
 
 plotter_data["lep1_pt"] = {"binning": "25,0,100", "toFill": master_df, "title": "Leading Lepton Pt", "yscale": "log", "xlabel": "Leading Lepton Pt [GeV]"}
 plotter_data["lep1_eta"] = {"binning": "100,-2.5,2.5", "toFill": master_df, "title": "Leading Lepton $\eta$", "yscale": "log", "xlabel": "Leading Lepton $\eta$"}
@@ -252,6 +255,9 @@ plotter_data["m_tautau_SVFit"] = {"binning": "50,0,300", "toFill": master_df, "t
 plotter_data["pt_tautau_SVFit"] = {"binning": "50,0,200", "toFill": master_df, "title": "Di-tau SVFit pt", "yscale": "log", "xlabel":"Di-tau SVFit pt [GeV]"}
 plotter_data["eta_tautau_SVFit"] = {"binning": "50,-2.4,2.4", "toFill": master_df, "title": "Di-tau SVFit $\eta$", "yscale": "log"}
 plotter_data["phi_tautau_SVFit"] = {"binning": "50,-3.15,3.15", "toFill": master_df, "title": "Di-tau SVFit $\phi$", "yscale": "log"}
+plotter_data["dR_tautau_SVFit"] = {"binning":"50,0,10", "toFill": master_df, "title":"Di-tau SVFit $\Delta$R", "yscale":"log"}
+plotter_data["dR_ggtautau_SVFit"] = {"binning":"50,0,10", "toFill": master_df, "title":"\Delta$R between $\gamma\gamma$ and $\\tau\\tau$", "yscale":"log"}
+plotter_data["dPhi_MET_tau1"] = {"binning":"50,-3.15,3.15", "toFill": master_df, "title":"$\Delta\phi$ MET and leading lepton", "yscale":"log"}
 
 for process, data in tqdm(plotter_data.items()):
     print("Process = ", process)
