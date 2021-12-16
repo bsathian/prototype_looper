@@ -376,7 +376,7 @@ void FastMTT::run(const std::vector<classic_svFit::MeasuredTauLepton>& measuredT
   ////////////////////////////////////////////
   
   if(measuredTauLeptons.size()!=2){
-    std::cout<<"Number of MeasuredTauLepton is "<<measuredTauLeptons.size()
+    std::cerr<<"Number of MeasuredTauLepton is "<<measuredTauLeptons.size()
 	     <<" a user shouls pass exactly two leptons."<<std::endl;
     return;
   }

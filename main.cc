@@ -155,10 +155,8 @@ bool passDiPhotonPreselections(std::string current_sample)
         trigger_cut = nt.gg_mass() > 0;
     }*/
 
-
-    bool leading_photon_mvaID_cut = nt.Photon_mvaID()[gHidx[0]] > -0.7;
-    bool trailing_photon_mvaID_cut = nt.Photon_mvaID()[gHidx[1]] > -0.7;
-    bool mvaID_cut = leading_photon_mvaID_cut and trailing_photon_mvaID_cut;
+    //for study purposes, we won't have the mvaID cuts!!!!!!!!!
+    bool mvaID_cut = true;
 
     bool leading_photon_eveto_cut = nt.Photon_electronVeto()[gHidx[0]] >= 0.5;
     bool trailing_photon_eveto_cut = nt.Photon_electronVeto()[gHidx[1]] >= 0.5;
@@ -449,7 +447,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             branches["g1_phi"] = nt.selectedPhoton_phi()[0];
             branches["g1_idmva"] = nt.selectedPhoton_mvaID()[0];
             branches["g1_pixVeto"] = nt.selectedPhoton_pixelSeed()[0];
-
+            branches["g1_isFake"] = 0;
 
             branches["g2_ptmgg"] = nt.selectedPhoton_pt()[1] / nt.gg_mass();
             branches["g2_pt"] = nt.selectedPhoton_pt()[1];
@@ -458,6 +456,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             branches["g2_phi"] = nt.selectedPhoton_phi()[1] * diPhoton_eta_sign;
             branches["g2_idmva"] = nt.selectedPhoton_mvaID()[1];
             branches["g2_pixVeto"] = nt.selectedPhoton_pixelSeed()[1];
+            branches["g2_isFake"]  = 0;
 
             branches["gg_pt"] = nt.gg_pt();
             branches["gg_eta"] = nt.gg_eta();
@@ -475,7 +474,11 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
 
             branches["MET_gg_dphi"] =  phi_mpi_pi(diPhoton.Phi() - nt.MET_phi());
 
-
+            if(current_sample != "Data")
+            {
+                branches["g1_isFake"] = ((nt.selectedPhoton_genPartFlav())[0] == 0);
+                branches["g2_isFake"] = ((nt.selectedPhoton_genPartFlav())[1] == 0);
+            }
             //lepton and jet branches - default values
             branches["jet1_pt"] = -999;
             branches["jet1_eta"] = -999;
@@ -927,10 +930,10 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
 
             }
 
-            if(Category < 0)
+/*            if(Category < 0)
             {
                 continue;
-            }
+            }*/
 
             //jets
             float max_bTag = -999;
@@ -1351,13 +1354,14 @@ int main(int argc, char* argv[])
     }
     readBadFiles("bad_files.txt");
 
-    for(auto &jt:samples_2016)
-    {
-        std::cout<<jt.first<<" "<<process_ids[jt.first]<<std::endl;
-    }
     for(auto& jt:samples_2016)
     {
         std::string sample = jt.first;
+        //special addition for this study only
+        if(sample != "Data" and sample.find("GJets") == std::string::npos)
+        {
+            continue;
+        }
         if(select_samples != "" and sample != select_samples)
         {
             continue;
