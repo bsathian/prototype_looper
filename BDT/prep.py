@@ -38,6 +38,17 @@ parser.add_argument(
         type = str,
         default = "t"
         )
+parser.add_argument(
+        "--gjets_data",
+        help="Path of data driven G+Jets file, leave blank if MC only",
+        type=str,
+        default=None
+        )
+parser.add_argument(
+        "--save_new_df",
+        help="Save appended DF",
+        action="store_true",
+        )
 args = parser.parse_args()
 
 prepper = prep_helper.PrepHelper(**vars(args))

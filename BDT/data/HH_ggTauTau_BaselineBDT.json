@@ -1,6 +1,6 @@
 {
     "signal" : ["HH_ggTauTau" , "HH_ggWW_semileptonic" , "HH_ggWW_dileptonic"],
-    "background" : ["DiPhoton", "TTGG", "TTGamma", "TTbar", "WGamma", "ZGamma","VH", "ttH", "ggH", "VBFH"],
+    "background" : ["DiPhoton", "TTGG", "TTGamma", "TTbar", "WGamma", "ZGamma","VH", "ttH", "ggH", "VBFH", "GJets"],
 
     "training_features": ["n_taus", "n_electrons", "n_muons", "n_isoTrk", "n_jets", "n_bjets","g1_ptmgg", "g2_ptmgg", "g1_eta_bdt", "g1_idmva", "g1_pixVeto", "g2_eta_bdt", "g2_idmva", "g2_pixVeto", "gg_eta", "gg_ptmgg", "gg_dR", "gg_dPhi", "gg_cosTheta_helicity_flashgg", "gg_tt_CS", "tt_hel", "gg_tt_hel", "MET_pt", "MET_gg_dphi", "MET_dil_dphi", "lep1_pt", "lep1_eta_bdt", "lep2_pt", "lep2_eta_bdt", "lep12_dphi", "lep12_deta", "lep12_dR", "jet1_pt", "jet1_eta_bdt", "jet1_bTag", "jet2_pt", "jet2_eta_bdt", "jet2_bTag", "pt_tautau_SVFit", "eta_bdt_tautau_SVFit", "m_tautau_SVFit", "dR_tautau_SVFit", "dR_ggtautau_SVFit", "dPhi_MET_tau1", "pt_tautau_vis", "eta_bdt_tautau_vis", "m_tautau_vis", "max_bTag", "dPhi_tautau_SVFit", "dPhi_ggtautau_SVFit"], 
 

@@ -9,8 +9,7 @@ from helpers import utils
 
 class PrepHelper():
     """
-    Class to read events in from an ntuple and perform necessary
-    preprocessing, sample labeling, etc and then write them
+        preprocessing, sample labeling, etc and then write them
     to an output hdf5 file to be used for BDT/DNN training
     """
 
@@ -20,6 +19,8 @@ class PrepHelper():
         self.debug = kwargs.get("debug")
         self.config_file = kwargs.get("config")
         self.tree_name = kwargs.get("tree_name", "t")
+        self.gjets_data = kwargs.get("gjets_data", "t")
+        self.save_new_df = kwargs.get("save_new_df", False)
         if self.debug > 0:
             print("[PrepHelper] Creating PrepHelper instance with options:")
             print("\n".join(["{0}={1!r}".format(a, b) for a, b in kwargs.items()]))
@@ -37,6 +38,19 @@ class PrepHelper():
             self.df = pandas.read_pickle(self.input)
         if self.debug > 0:
             print("[PrepHelper] Loaded file %s, containing %d events" % (self.input, len(self.df)))
+
+        if self.gjets_data:
+            if self.debug > 0:
+                print("[PrepHelper] Data driven estimation for Gamma + Jets")
+            if ".root" in self.gjets_data:
+                t = uproot.open(self.gjets_data)[self.tree_name]
+                self.gjets_df = t.arrays(self.config["training_features"] + self.config["branches"] + ["Category"], library="pd")
+            else:
+                self.gjets_df = pandas.read_pickle(self.gjets_data)
+            if self.debug > 0:
+                print("[PrepHelper] Loaded G+Jets data driven estimation file {}, containing {} events".format(self.gjets_data, len(self.gjets_df)))
+        else:
+            self.gjets_df = None
 
     def run(self):
         self.prepare_samples()
@@ -97,6 +111,25 @@ class PrepHelper():
         Select only the needed samples from the dataframe,
         then assign labels to signals/backgrounds
         """
+        # If separate gjets_df found, remove GJets MC from self.df and append self.gjets_df with the appropriate process id
+        if self.gjets_df is not None:
+            if self.debug > 0:
+                print("[PrepHelper] appending gjets df to main df")
+            self.df = self.df.loc[self.df["process_id"] != self.process_id_map["GJets"]] # removes process_id = 8
+            self.gjets_df["process_id"] = self.process_id_map["GJets"] # assign new process id to data driven background
+            self.df = self.df.append(self.gjets_df, ignore_index=True) # Appended!
+            merged_file_name = self.input.split(".")
+            merged_file_name = ".".join(merged_file_name[:-1]) + "_with_gjets." + ".".join(merged_file_name[-1:])
+            if self.save_new_df:
+                if self.debug > 0:
+                    print("[PrepHelper] Saving merged dataframe to {}".format(merged_file_name))
+                if ".root" in self.input:
+                    with uproot.recreate(merged_file_name) as f:
+                        f["t"] = self.df
+                else:
+                    self.df.to_pickle(merged_file_name)
+        # The existing machinery will take over from here!
+
         self.process_ids = []
         for process in self.config["signal"] + self.config["background"]:
            self.process_ids.append(self.process_id_map[process])
