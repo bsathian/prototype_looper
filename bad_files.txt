@@ -18,3 +18,4 @@
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/DiPhotonJetsBox_MGG-80toInf_13TeV-Sherpa_private_mc16/skimNano-Hggselection__v5/210215_162355/0000//tree_21.root
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/EGamma_Run2018A_private_data18/skimNano-Hggselection__v5/210215_164425/0000//tree_123.root
 /hadoop/cms/store/user/legianni/skimNano-Hggselection/EGamma_Run2018D_private_data18/skimNano-Hggselection__v5/210215_164812/0000//tree_534.root
+/hadoop/cms/store/user/legianni/skimNano-Hggselection/DoubleEG_Run2016G_private_data16/skimNano-Hggselection__v5/210215_163513/0000//tree_2.root

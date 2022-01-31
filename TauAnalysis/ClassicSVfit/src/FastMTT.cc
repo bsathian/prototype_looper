@@ -41,7 +41,7 @@ std::array<double, max_order+1> getPowTable(double x) {
 		powerTable[i]=powerTable[i-1]*x;
 	}
 	return powerTable;
-};
+}
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 void Likelihood::setLeptonInputs(const classic_svFit::LorentzVector & aLeg1P4,

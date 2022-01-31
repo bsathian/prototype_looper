@@ -568,7 +568,10 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             nGoodIsoTracks = goodIsoTrackIndices.size();
 
             bool ZFlag = false;
+            bool ZGammaFlag = false;
             float mll = -999;
+            float mllGamma[2] = {-999, -999}; //Sam's new stuff
+            
             //FIXME:Checking only good electrons and good muons!
             for(size_t i = 0; i < nGoodElectrons;i++)
             {
@@ -580,6 +583,16 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                         if(mll > 80 and mll < 100)
                         {
                             ZFlag = true;
+                        }
+
+                        for(size_t k = 0; k < 2; k++)
+                        {
+                            mllGamma[k] = (nt.Electron_p4()[goodElectronIndices[i]] + nt.Electron_p4()[goodElectronIndices[j]] + nt.selectedPhoton_p4()[k]).M();
+                            if(mllGamma[k] >= 86 and mllGamma[k] <= 96)
+                            {
+                                ZGammaFlag = true;
+                            }
+
                         }
                     }
                 }
@@ -596,15 +609,31 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                         {
                             ZFlag = true;
                         }
+
+                        for(size_t k = 0; k < 2; k++)
+                        {
+                            mllGamma[k] = (nt.Muon_p4()[goodMuonIndices[i]] + nt.Muon_p4()[goodMuonIndices[j]] + nt.selectedPhoton_p4()[k]).M();
+        
+                            if(mllGamma[k] >= 86 and mllGamma[k] <= 96)
+                            {
+                                ZGammaFlag = true;
+                            }
+                        }
+
                     }
                 }
             }
             //Z boson veto! - all pairs!
             if(ZFlag) continue;
 
+            //ZGamma veto!
+//            if(ZGammaFlag) continue;
+
+
             int decay_1_index, decay_2_index;
 
-
+            branches["mllGamma_leading"] = mllGamma[0];
+            branches["mllGamma_subleading"] = mllGamma[1];
             //Implementing Claudio's suggestions
             float finalState_massPair = -999;
             for(size_t i = 0; i < nGoodTaus; i++)
