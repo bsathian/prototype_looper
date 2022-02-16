@@ -20,3 +20,4 @@ TauAnalysis/ClassicSVfit/exec/
 *.pdf
 *.png
 plots/
+.nfs*

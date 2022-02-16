@@ -588,7 +588,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                         for(size_t k = 0; k < 2; k++)
                         {
                             mllGamma[k] = (nt.Electron_p4()[goodElectronIndices[i]] + nt.Electron_p4()[goodElectronIndices[j]] + nt.selectedPhoton_p4()[k]).M();
-                            if(mllGamma[k] >= 86 and mllGamma[k] <= 96)
+                            if(mllGamma[k] >= 91 - 25 and mllGamma[k] <= 91 + 25)
                             {
                                 ZGammaFlag = true;
                             }
@@ -614,7 +614,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                         {
                             mllGamma[k] = (nt.Muon_p4()[goodMuonIndices[i]] + nt.Muon_p4()[goodMuonIndices[j]] + nt.selectedPhoton_p4()[k]).M();
         
-                            if(mllGamma[k] >= 86 and mllGamma[k] <= 96)
+                            if(mllGamma[k] >= 91 - 25 and mllGamma[k] <= 91 + 25)
                             {
                                 ZGammaFlag = true;
                             }
@@ -627,7 +627,7 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
             if(ZFlag) continue;
 
             //ZGamma veto!
-//            if(ZGammaFlag) continue;
+            if(ZGammaFlag) continue;
 
 
             int decay_1_index, decay_2_index;
