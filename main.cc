@@ -1066,6 +1066,12 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
 
                 branches["tt_hel_vis"] = std::abs(helicity_flashgg(decay1, decay2));
                 branches["gg_tt_hel_vis"] = std::abs(helicity_flashgg(diPhoton, (decay1 + decay2)));
+
+                branches["dR_g1_tt_vis"] = ROOT::Math::VectorUtil::DeltaR(nt.selectedPhoton_p4()[0], visibleParent);
+                branches["dR_g2_tt_vis"] = ROOT::Math::VectorUtil::DeltaR(nt.selectedPhoton_p4()[1], visibleParent);
+                branches["dPhi_g1_tt_vis"] = phi_mpi_pi(nt.selectedPhoton_phi()[0] - visibleParent.Phi());
+                branches["dPhi_g2_tt_vis"] = phi_mpi_pi(nt.selectedPhoton_phi()[1] - visibleParent.Phi());
+
             }
             else
             {
@@ -1082,6 +1088,11 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
 
                 branches["tt_hel_vis"] = -999;
                 branches["gg_tt_hel_vis"] = -999;
+                branches["dR_g1_tt_vis"] = -999;
+                branches["dR_g2_tt_vis"] = -999;
+                branches["dPhi_g1_tt_vis"] = -999;
+                branches["dPhi_g2_tt_vis"] = -999;
+ 
             }
 
 
@@ -1156,6 +1167,11 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 branches["dPhi_ggtautau_SVFit"] = phi_mpi_pi(diTaup4.phi() - (nt.selectedPhoton_p4()[0] + nt.selectedPhoton_p4()[1]).phi());
                 branches["MET_dil_dphi"] = phi_mpi_pi(diTaup4.Phi()- nt.MET_phi());
 
+                branches["dR_g1_tt_SVFit"] = ROOT::Math::VectorUtil::DeltaR(diTaup4, nt.selectedPhoton_p4()[0]);
+                branches["dR_g2_tt_SVFit"] = ROOT::Math::VectorUtil::DeltaR(diTaup4, nt.selectedPhoton_p4()[1]);
+                branches["dPhi_g1_tt_SVFit"] = phi_mpi_pi(diTaup4.Phi() - nt.selectedPhoton_phi()[0]);
+                branches["dPhi_g2_tt_SVFit"] = phi_mpi_pi(diTaup4.Phi() - nt.selectedPhoton_phi()[1]);
+
             }
             else
             {
@@ -1174,6 +1190,11 @@ void loopTChain(TChain* ch, int year, float scale1fb, std::string current_sample
                 branches["dR_ggtautau_SVFit"] = -999;
                 branches["dPhi_tautau_SVFit"] = -999;
                 branches["dPhi_ggtautau_SVFit"] = -999;
+
+                branches["dR_g1_tt_SVFit"] = -999;
+                branches["dR_g2_tt_SVFit"] = -999;
+                branches["dPhi_g1_tt_SVFit"] = -999;
+                branches["dPhi_g2_tt_SVFit"] = -999;
 
             }
             //write out branches
@@ -1281,7 +1302,7 @@ int main(int argc, char* argv[])
     cxxopts::Options options("looper", "Prototype looper");
     options.add_options()
         ("no_data", "don't run on data", cxxopts::value<bool>()->default_value("false"))
-        ("select_sample", "run only on one sample", cxxopts::value<std::string>()->default_value(""))
+        ("select_samples", "comma separated list of samples to run", cxxopts::value<std::string>()->default_value(""))
         ("output", "output root file name", cxxopts::value<std::string>()->default_value("output.root"))
         ("sync","run sync exercise", cxxopts::value<bool>()->default_value("false"))
         ("h, help", "Print help");
@@ -1302,7 +1323,16 @@ int main(int argc, char* argv[])
     lumi[2017] = 41.5;
     lumi[2018] = 59.8; 
 
-    std::string select_samples = result["select_sample"].as<std::string>();
+    std::string select_samples = result["select_samples"].as<std::string>();
+    std::string temp;
+    //comma separated stuff
+    std::stringstream ss(select_samples);
+    std::vector<std::string> v_select_samples;
+    while(std::getline(ss, temp, ','))
+    {
+        v_select_samples.push_back(temp);
+    }
+
     bool sync = result["sync"].as<bool>();
 
     is_resonant["Data"] = false;
@@ -1387,8 +1417,9 @@ int main(int argc, char* argv[])
     for(auto& jt:samples_2016)
     {
         std::string sample = jt.first;
-        if(select_samples != "" and sample != select_samples)
+        if(select_samples != "" and std::find(v_select_samples.begin(), v_select_samples.end(), sample) == v_select_samples.end())
         {
+            std::cout<<"skipping "<<sample<<std::endl;
             continue;
         }
         if(result["no_data"].as<bool>() and sample == "Data")

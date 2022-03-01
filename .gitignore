@@ -21,3 +21,4 @@ TauAnalysis/ClassicSVfit/exec/
 *.png
 plots/
 .nfs*
+scratch/
